@@ -1,0 +1,43 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+version: "3"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  fmt:
+    desc: Format Go source files with goimports
+    cmds:
+      - goimports -w .
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  test-coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+    silent: true
+
+  generate:
+    desc: Generate protobuf and slimrpc stubs (requires buf and protoc-gen-slimrpc-go)
+    cmds:
+      - |
+        find . -name 'buf.gen.yaml' | while read -r file; do
+          folder=$(dirname "$file")
+          echo "Generating proto files for $folder"
+          pushd > /dev/null "$folder" && buf generate && popd > /dev/null
+        done

@@ -1,0 +1,76 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+run:
+  concurrency: 4
+  timeout: 10m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+issues:
+  exclude-dirs:
+    - third-party
+  skip-dirs-use-default: false
+
+output:
+  formats:
+    - format: colored-line-number
+      path: stdout
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  govet:
+    shadow: true
+    enable-all: true
+    disable:
+      - fieldalignment
+
+  revive:
+    min-confidence: 0.8
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/agntcy/slim-a2a-go
+
+  misspell:
+    locale: US
+
+  depguard:
+    rules:
+      denied-deps:
+        deny:
+          - pkg: go.uber.org/atomic
+            desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
+          - pkg: github.com/pkg/errors
+            desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+          - pkg: github.com/hashicorp/go-multierror
+            desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+
+  lll:
+    line-length: 120
+    tab-width: 1
+
+linters:
+  enable:
+    - depguard
+    - errcheck
+    - errorlint
+    - copyloopvar
+    - gocritic
+    - gofmt
+    - goimports
+    - gosec
+    - govet
+    - misspell
+    - revive
+    - staticcheck
+    - tenv
+    - unconvert
+    - unused
+    - unparam
+    - lll
