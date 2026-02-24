@@ -12,8 +12,9 @@ import (
 	"github.com/a2aproject/a2a-go/a2asrv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-bindings-go/slimrpc"
-	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
 )
 
 // Handler implements ourpb.A2AServiceServer by delegating to an a2asrv.RequestHandler.
@@ -32,7 +33,9 @@ func (h *Handler) RegisterWith(s *slim_bindings.Server) {
 	ourpb.RegisterA2AServiceServer(s, h)
 }
 
-func (h *Handler) SendMessage(ctx context.Context, req *a2agopb.SendMessageRequest) (*a2agopb.SendMessageResponse, error) {
+func (h *Handler) SendMessage(
+	ctx context.Context, req *a2agopb.SendMessageRequest,
+) (*a2agopb.SendMessageResponse, error) {
 	params, err := pbconv.FromProtoSendMessageRequest(req)
 	if err != nil {
 		return nil, err
@@ -44,7 +47,11 @@ func (h *Handler) SendMessage(ctx context.Context, req *a2agopb.SendMessageReque
 	return pbconv.ToProtoSendMessageResponse(result)
 }
 
-func (h *Handler) SendStreamingMessage(ctx context.Context, req *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+func (h *Handler) SendStreamingMessage(
+	ctx context.Context,
+	req *a2agopb.SendMessageRequest,
+	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
+) error {
 	params, err := pbconv.FromProtoSendMessageRequest(req)
 	if err != nil {
 		return err
@@ -81,7 +88,7 @@ func fromProtoTaskState(state a2agopb.TaskState) a2a.TaskState {
 	switch state {
 	case a2agopb.TaskState_TASK_STATE_AUTH_REQUIRED:
 		return a2a.TaskStateAuthRequired
-	case a2agopb.TaskState_TASK_STATE_CANCELLED:
+	case a2agopb.TaskState_TASK_STATE_CANCELLED: //nolint:misspell // proto-generated enum name
 		return a2a.TaskStateCanceled
 	case a2agopb.TaskState_TASK_STATE_COMPLETED:
 		return a2a.TaskStateCompleted
@@ -100,7 +107,9 @@ func fromProtoTaskState(state a2agopb.TaskState) a2a.TaskState {
 	}
 }
 
-func (h *Handler) ListTasks(ctx context.Context, req *a2agopb.ListTasksRequest) (*a2agopb.ListTasksResponse, error) {
+func (h *Handler) ListTasks(
+	ctx context.Context, req *a2agopb.ListTasksRequest,
+) (*a2agopb.ListTasksResponse, error) {
 	// Convert proto request to domain type manually (pbconv.FromProtoListTasksRequest does not exist).
 	domainReq := &a2a.ListTasksRequest{
 		ContextID:        req.GetContextId(),
@@ -134,11 +143,13 @@ func (h *Handler) ListTasks(ctx context.Context, req *a2agopb.ListTasksRequest) 
 	return &a2agopb.ListTasksResponse{
 		Tasks:         protoTasks,
 		NextPageToken: resp.NextPageToken,
-		TotalSize:     int32(resp.TotalSize),
+		TotalSize:     int32(resp.TotalSize), //nolint:gosec // page size fits in int32
 	}, nil
 }
 
-func (h *Handler) CancelTask(ctx context.Context, req *a2agopb.CancelTaskRequest) (*a2agopb.Task, error) {
+func (h *Handler) CancelTask(
+	ctx context.Context, req *a2agopb.CancelTaskRequest,
+) (*a2agopb.Task, error) {
 	taskID, err := pbconv.ExtractTaskID(req.GetName())
 	if err != nil {
 		return nil, err
@@ -150,7 +161,11 @@ func (h *Handler) CancelTask(ctx context.Context, req *a2agopb.CancelTaskRequest
 	return pbconv.ToProtoTask(task)
 }
 
-func (h *Handler) TaskSubscription(ctx context.Context, req *a2agopb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+func (h *Handler) TaskSubscription(
+	ctx context.Context,
+	req *a2agopb.TaskSubscriptionRequest,
+	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
+) error {
 	taskID, err := pbconv.ExtractTaskID(req.GetName())
 	if err != nil {
 		return err
@@ -170,7 +185,10 @@ func (h *Handler) TaskSubscription(ctx context.Context, req *a2agopb.TaskSubscri
 	return nil
 }
 
-func (h *Handler) CreateTaskPushNotificationConfig(ctx context.Context, req *a2agopb.CreateTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
+func (h *Handler) CreateTaskPushNotificationConfig(
+	ctx context.Context,
+	req *a2agopb.CreateTaskPushNotificationConfigRequest,
+) (*a2agopb.TaskPushNotificationConfig, error) {
 	params, err := pbconv.FromProtoCreateTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
@@ -182,7 +200,10 @@ func (h *Handler) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a
 	return pbconv.ToProtoTaskPushConfig(result)
 }
 
-func (h *Handler) GetTaskPushNotificationConfig(ctx context.Context, req *a2agopb.GetTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
+func (h *Handler) GetTaskPushNotificationConfig(
+	ctx context.Context,
+	req *a2agopb.GetTaskPushNotificationConfigRequest,
+) (*a2agopb.TaskPushNotificationConfig, error) {
 	params, err := pbconv.FromProtoGetTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
@@ -194,7 +215,10 @@ func (h *Handler) GetTaskPushNotificationConfig(ctx context.Context, req *a2agop
 	return pbconv.ToProtoTaskPushConfig(result)
 }
 
-func (h *Handler) ListTaskPushNotificationConfig(ctx context.Context, req *a2agopb.ListTaskPushNotificationConfigRequest) (*a2agopb.ListTaskPushNotificationConfigResponse, error) {
+func (h *Handler) ListTaskPushNotificationConfig(
+	ctx context.Context,
+	req *a2agopb.ListTaskPushNotificationConfigRequest,
+) (*a2agopb.ListTaskPushNotificationConfigResponse, error) {
 	taskID, err := pbconv.ExtractTaskID(req.GetParent())
 	if err != nil {
 		return nil, err
@@ -206,7 +230,7 @@ func (h *Handler) ListTaskPushNotificationConfig(ctx context.Context, req *a2ago
 	return pbconv.ToProtoListTaskPushConfig(results)
 }
 
-func (h *Handler) GetAgentCard(ctx context.Context, req *a2agopb.GetAgentCardRequest) (*a2agopb.AgentCard, error) {
+func (h *Handler) GetAgentCard(ctx context.Context, _ *a2agopb.GetAgentCardRequest) (*a2agopb.AgentCard, error) {
 	card, err := h.handler.OnGetExtendedAgentCard(ctx)
 	if err != nil {
 		return nil, err
@@ -214,7 +238,10 @@ func (h *Handler) GetAgentCard(ctx context.Context, req *a2agopb.GetAgentCardReq
 	return pbconv.ToProtoAgentCard(card)
 }
 
-func (h *Handler) DeleteTaskPushNotificationConfig(ctx context.Context, req *a2agopb.DeleteTaskPushNotificationConfigRequest) (*emptypb.Empty, error) {
+func (h *Handler) DeleteTaskPushNotificationConfig(
+	ctx context.Context,
+	req *a2agopb.DeleteTaskPushNotificationConfigRequest,
+) (*emptypb.Empty, error) {
 	params, err := pbconv.FromProtoDeleteTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err

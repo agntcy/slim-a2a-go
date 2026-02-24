@@ -12,6 +12,7 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	"github.com/a2aproject/a2a-go/a2apb/pbconv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
+
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
 )
 
@@ -35,7 +36,9 @@ func NewTransport(channel *slim_bindings.Channel) *Transport {
 	}
 }
 
-func (t *Transport) SendMessage(ctx context.Context, params *a2a.MessageSendParams) (a2a.SendMessageResult, error) {
+func (t *Transport) SendMessage(
+	ctx context.Context, params *a2a.MessageSendParams,
+) (a2a.SendMessageResult, error) {
 	req, err := pbconv.ToProtoSendMessageRequest(params)
 	if err != nil {
 		return nil, err
@@ -47,7 +50,9 @@ func (t *Transport) SendMessage(ctx context.Context, params *a2a.MessageSendPara
 	return pbconv.FromProtoSendMessageResponse(resp)
 }
 
-func (t *Transport) SendStreamingMessage(ctx context.Context, params *a2a.MessageSendParams) iter.Seq2[a2a.Event, error] {
+func (t *Transport) SendStreamingMessage(
+	ctx context.Context, params *a2a.MessageSendParams,
+) iter.Seq2[a2a.Event, error] {
 	return func(yield func(a2a.Event, error) bool) {
 		req, err := pbconv.ToProtoSendMessageRequest(params)
 		if err != nil {
@@ -80,7 +85,9 @@ func (t *Transport) SendStreamingMessage(ctx context.Context, params *a2a.Messag
 	}
 }
 
-func (t *Transport) GetTask(ctx context.Context, query *a2a.TaskQueryParams) (*a2a.Task, error) {
+func (t *Transport) GetTask(
+	ctx context.Context, query *a2a.TaskQueryParams,
+) (*a2a.Task, error) {
 	req, err := pbconv.ToProtoGetTaskRequest(query)
 	if err != nil {
 		return nil, err
@@ -92,7 +99,9 @@ func (t *Transport) GetTask(ctx context.Context, query *a2a.TaskQueryParams) (*a
 	return pbconv.FromProtoTask(resp)
 }
 
-func (t *Transport) ListTasks(ctx context.Context, listReq *a2a.ListTasksRequest) (*a2a.ListTasksResponse, error) {
+func (t *Transport) ListTasks(
+	ctx context.Context, listReq *a2a.ListTasksRequest,
+) (*a2a.ListTasksResponse, error) {
 	req, err := pbconv.ToProtoListTasksRequest(listReq)
 	if err != nil {
 		return nil, err
@@ -104,7 +113,9 @@ func (t *Transport) ListTasks(ctx context.Context, listReq *a2a.ListTasksRequest
 	return pbconv.FromProtoListTasksResponse(resp)
 }
 
-func (t *Transport) CancelTask(ctx context.Context, id *a2a.TaskIDParams) (*a2a.Task, error) {
+func (t *Transport) CancelTask(
+	ctx context.Context, id *a2a.TaskIDParams,
+) (*a2a.Task, error) {
 	req, err := pbconv.ToProtoCancelTaskRequest(id)
 	if err != nil {
 		return nil, err
@@ -116,7 +127,9 @@ func (t *Transport) CancelTask(ctx context.Context, id *a2a.TaskIDParams) (*a2a.
 	return pbconv.FromProtoTask(resp)
 }
 
-func (t *Transport) ResubscribeToTask(ctx context.Context, id *a2a.TaskIDParams) iter.Seq2[a2a.Event, error] {
+func (t *Transport) ResubscribeToTask(
+	ctx context.Context, id *a2a.TaskIDParams,
+) iter.Seq2[a2a.Event, error] {
 	return func(yield func(a2a.Event, error) bool) {
 		req, err := pbconv.ToProtoTaskSubscriptionRequest(id)
 		if err != nil {
@@ -149,7 +162,9 @@ func (t *Transport) ResubscribeToTask(ctx context.Context, id *a2a.TaskIDParams)
 	}
 }
 
-func (t *Transport) GetTaskPushConfig(ctx context.Context, params *a2a.GetTaskPushConfigParams) (*a2a.TaskPushConfig, error) {
+func (t *Transport) GetTaskPushConfig(
+	ctx context.Context, params *a2a.GetTaskPushConfigParams,
+) (*a2a.TaskPushConfig, error) {
 	req, err := pbconv.ToProtoGetTaskPushConfigRequest(params)
 	if err != nil {
 		return nil, err
@@ -161,7 +176,9 @@ func (t *Transport) GetTaskPushConfig(ctx context.Context, params *a2a.GetTaskPu
 	return pbconv.FromProtoTaskPushConfig(resp)
 }
 
-func (t *Transport) ListTaskPushConfig(ctx context.Context, params *a2a.ListTaskPushConfigParams) ([]*a2a.TaskPushConfig, error) {
+func (t *Transport) ListTaskPushConfig(
+	ctx context.Context, params *a2a.ListTaskPushConfigParams,
+) ([]*a2a.TaskPushConfig, error) {
 	req, err := pbconv.ToProtoListTaskPushConfigRequest(params)
 	if err != nil {
 		return nil, err
@@ -173,7 +190,9 @@ func (t *Transport) ListTaskPushConfig(ctx context.Context, params *a2a.ListTask
 	return pbconv.FromProtoListTaskPushConfig(resp)
 }
 
-func (t *Transport) SetTaskPushConfig(ctx context.Context, params *a2a.TaskPushConfig) (*a2a.TaskPushConfig, error) {
+func (t *Transport) SetTaskPushConfig(
+	ctx context.Context, params *a2a.TaskPushConfig,
+) (*a2a.TaskPushConfig, error) {
 	req, err := pbconv.ToProtoCreateTaskPushConfigRequest(params)
 	if err != nil {
 		return nil, err
@@ -185,7 +204,9 @@ func (t *Transport) SetTaskPushConfig(ctx context.Context, params *a2a.TaskPushC
 	return pbconv.FromProtoTaskPushConfig(resp)
 }
 
-func (t *Transport) DeleteTaskPushConfig(ctx context.Context, params *a2a.DeleteTaskPushConfigParams) error {
+func (t *Transport) DeleteTaskPushConfig(
+	ctx context.Context, params *a2a.DeleteTaskPushConfigParams,
+) error {
 	req, err := pbconv.ToProtoDeleteTaskPushConfigRequest(params)
 	if err != nil {
 		return err
