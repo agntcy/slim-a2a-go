@@ -19,8 +19,8 @@ import (
 	"github.com/a2aproject/a2a-go/a2a"
 	"github.com/a2aproject/a2a-go/a2asrv"
 	"github.com/a2aproject/a2a-go/a2asrv/eventqueue"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-a2a-go/a2aserver"
+	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
 func main() {

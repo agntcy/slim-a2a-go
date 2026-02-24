@@ -17,8 +17,8 @@ import (
 	"os"
 
 	"github.com/a2aproject/a2a-go/a2a"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
 	slima2aclient "github.com/agntcy/slim-a2a-go/a2aclient"
+	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
 func main() {
