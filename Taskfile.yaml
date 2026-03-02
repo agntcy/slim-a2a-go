@@ -32,12 +32,16 @@ tasks:
       - go tool cover -html=coverage.out -o coverage.html
     silent: true
 
-  generate:
-    desc: Generate protobuf and slimrpc stubs (requires buf and protoc-gen-slimrpc-go)
+  install-slimrpc-compiler:
+    desc: Install protoc-gen-slimrpc-go via cargo (skipped if already installed)
+    status:
+      - which protoc-gen-slimrpc-go
     cmds:
-      - |
-        find . -name 'buf.gen.yaml' | while read -r file; do
-          folder=$(dirname "$file")
-          echo "Generating proto files for $folder"
-          pushd > /dev/null "$folder" && buf generate && popd > /dev/null
-        done
+      - cargo install agntcy-protoc-slimrpc-plugin
+
+  generate:
+    desc: Generate protobuf and slimrpc stubs into a2apb/ (requires buf and cargo)
+    deps:
+      - install-slimrpc-compiler
+    cmds:
+      - buf generate
