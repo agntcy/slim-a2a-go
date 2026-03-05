@@ -16,8 +16,8 @@ import (
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
 )
 
-// SLIMProtocol is the transport protocol identifier for SLIM.
-const SLIMProtocol a2a.TransportProtocol = "slim"
+// SLIMProtocol is the transport protocol identifier for SLIM RPC.
+const SLIMProtocol a2a.TransportProtocol = "slimrpc"
 
 // Transport implements a2aclient.Transport over SLIM RPC.
 type Transport struct {
