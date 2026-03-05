@@ -4,7 +4,7 @@ go 1.25.2
 
 require (
 	github.com/a2aproject/a2a-go v0.3.7
-	github.com/agntcy/slim-bindings-go v1.1.1
+	github.com/agntcy/slim-bindings-go v1.2.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250715232539-7130f93afb79
 	google.golang.org/protobuf v1.36.11
 )

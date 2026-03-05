@@ -5,6 +5,7 @@ package a2aclient
 
 import (
 	"context"
+	"fmt"
 	"iter"
 
 	a2a "github.com/a2aproject/a2a-go/a2a"
@@ -34,6 +35,28 @@ func NewTransport(channel *slim_bindings.Channel) *Transport {
 		client:  ourpb.NewA2AServiceClient(channel),
 		channel: channel,
 	}
+}
+
+// WithSLIMRPCTransport returns an [a2aclient.FactoryOption] that registers the
+// SLIM RPC transport with the client factory.
+//
+// app and connID are the pre-established SLIM app and connection — set these
+// up with slim_bindings before calling [a2aclient.NewFactory]. The url
+// supplied by the factory (the agent's service URL) is parsed into a
+// [slim_bindings.Name] via [slim_bindings.NameFromString], so callers should
+// use the SLIM agent name (e.g. "agntcy/demo/echo_agent") as the service URL.
+func WithSLIMRPCTransport(app *slim_bindings.App, connID *uint64) a2agoClient.FactoryOption {
+	return a2agoClient.WithTransport(
+		SLIMProtocol,
+		a2agoClient.TransportFactoryFn(func(ctx context.Context, url string, card *a2a.AgentCard) (a2agoClient.Transport, error) {
+			remoteName, err := slim_bindings.NameFromString(url)
+			if err != nil {
+				return nil, fmt.Errorf("invalid SLIM agent name %q: %w", url, err)
+			}
+			channel := slim_bindings.ChannelNewWithConnection(app, remoteName, connID)
+			return NewTransport(channel), nil
+		}),
+	)
 }
 
 func (t *Transport) SendMessage(
