@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1](https://github.com/agntcy/slim-a2a-go/compare/v0.1.0...v0.1.1) (2026-03-10)
+
+
+### Features
+
+* **a2aclient:** add WithSLIMRPCTransport factory option ([#8](https://github.com/agntcy/slim-a2a-go/issues/8)) ([39cf98c](https://github.com/agntcy/slim-a2a-go/commit/39cf98c80278e8d700b3a7f422ef9cb5e0e11bd7))
+
+
+### Bug Fixes
+
+* **a2aclient:** rename SLIMProtocol identifier to "slimrpc" ([#7](https://github.com/agntcy/slim-a2a-go/issues/7)) ([e24fd16](https://github.com/agntcy/slim-a2a-go/commit/e24fd16b1e7f77ee394f609ae2be4eaf544661a2))
+
 ## 0.1.0 (2026-03-02)
 
 
