@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
-	a2a_a2apb "github.com/a2aproject/a2a-go/a2apb"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-bindings-go/slimrpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+	a2a_a2apb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
 )
+
 
 // A2AServiceClient is the client API for A2AService service.
 type A2AServiceClient interface {
@@ -22,11 +23,11 @@ type A2AServiceClient interface {
 	GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (*a2a_a2apb.Task, error)
 	ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (*a2a_a2apb.ListTasksResponse, error)
 	CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (*a2a_a2apb.Task, error)
-	TaskSubscription(ctx context.Context, req *a2a_a2apb.TaskSubscriptionRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
-	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.CreateTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
+	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
+	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
-	ListTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigRequest) (*a2a_a2apb.ListTaskPushNotificationConfigResponse, error)
-	GetAgentCard(ctx context.Context, req *a2a_a2apb.GetAgentCardRequest) (*a2a_a2apb.AgentCard, error)
+	ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error)
+	GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (*a2a_a2apb.AgentCard, error)
 	DeleteTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.DeleteTaskPushNotificationConfigRequest) (*emptypb.Empty, error)
 }
 
@@ -40,6 +41,7 @@ func NewA2AServiceClient(channel *slim_bindings.Channel) A2AServiceClient {
 		channel: channel,
 	}
 }
+
 
 func (c *A2AServiceClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error) {
 	// Serialize request
@@ -62,7 +64,7 @@ func (c *A2AServiceClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.S
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "SendMessage", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "SendMessage", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +99,7 @@ func (c *A2AServiceClientImpl) SendStreamingMessage(ctx context.Context, req *a2
 	}
 
 	// Make RPC call
-	stream, err := c.channel.CallUnaryStreamAsync("a2a.v1.A2AService", "SendStreamingMessage", reqBytes, timeout, metadata)
+	stream, err := c.channel.CallUnaryStreamAsync("lf.a2a.v1.A2AService", "SendStreamingMessage", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +128,7 @@ func (c *A2AServiceClientImpl) GetTask(ctx context.Context, req *a2a_a2apb.GetTa
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "GetTask", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "GetTask", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +163,7 @@ func (c *A2AServiceClientImpl) ListTasks(ctx context.Context, req *a2a_a2apb.Lis
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "ListTasks", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "ListTasks", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +198,7 @@ func (c *A2AServiceClientImpl) CancelTask(ctx context.Context, req *a2a_a2apb.Ca
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "CancelTask", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "CancelTask", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +212,7 @@ func (c *A2AServiceClientImpl) CancelTask(ctx context.Context, req *a2a_a2apb.Ca
 	return resp, nil
 }
 
-func (c *A2AServiceClientImpl) TaskSubscription(ctx context.Context, req *a2a_a2apb.TaskSubscriptionRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
+func (c *A2AServiceClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -231,7 +233,7 @@ func (c *A2AServiceClientImpl) TaskSubscription(ctx context.Context, req *a2a_a2
 	}
 
 	// Make RPC call
-	stream, err := c.channel.CallUnaryStreamAsync("a2a.v1.A2AService", "TaskSubscription", reqBytes, timeout, metadata)
+	stream, err := c.channel.CallUnaryStreamAsync("lf.a2a.v1.A2AService", "SubscribeToTask", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +241,7 @@ func (c *A2AServiceClientImpl) TaskSubscription(ctx context.Context, req *a2a_a2
 	return slimrpc.NewClientResponseStream[*a2a_a2apb.StreamResponse](stream), nil
 }
 
-func (c *A2AServiceClientImpl) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.CreateTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error) {
+func (c *A2AServiceClientImpl) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -260,7 +262,7 @@ func (c *A2AServiceClientImpl) CreateTaskPushNotificationConfig(ctx context.Cont
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "CreateTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "CreateTaskPushNotificationConfig", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +297,7 @@ func (c *A2AServiceClientImpl) GetTaskPushNotificationConfig(ctx context.Context
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "GetTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "GetTaskPushNotificationConfig", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +311,7 @@ func (c *A2AServiceClientImpl) GetTaskPushNotificationConfig(ctx context.Context
 	return resp, nil
 }
 
-func (c *A2AServiceClientImpl) ListTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigRequest) (*a2a_a2apb.ListTaskPushNotificationConfigResponse, error) {
+func (c *A2AServiceClientImpl) ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -330,13 +332,13 @@ func (c *A2AServiceClientImpl) ListTaskPushNotificationConfig(ctx context.Contex
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "ListTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "ListTaskPushNotificationConfigs", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
 
 	// Deserialize response
-	resp := &a2a_a2apb.ListTaskPushNotificationConfigResponse{}
+	resp := &a2a_a2apb.ListTaskPushNotificationConfigsResponse{}
 	if err := proto.Unmarshal(respBytes, resp); err != nil {
 		return nil, err
 	}
@@ -344,7 +346,7 @@ func (c *A2AServiceClientImpl) ListTaskPushNotificationConfig(ctx context.Contex
 	return resp, nil
 }
 
-func (c *A2AServiceClientImpl) GetAgentCard(ctx context.Context, req *a2a_a2apb.GetAgentCardRequest) (*a2a_a2apb.AgentCard, error) {
+func (c *A2AServiceClientImpl) GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (*a2a_a2apb.AgentCard, error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -365,7 +367,7 @@ func (c *A2AServiceClientImpl) GetAgentCard(ctx context.Context, req *a2a_a2apb.
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "GetAgentCard", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "GetExtendedAgentCard", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +402,7 @@ func (c *A2AServiceClientImpl) DeleteTaskPushNotificationConfig(ctx context.Cont
 	}
 
 	// Make RPC call
-	respBytes, err := c.channel.CallUnaryAsync("a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	respBytes, err := c.channel.CallUnaryAsync("lf.a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", reqBytes, timeout, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -414,6 +416,7 @@ func (c *A2AServiceClientImpl) DeleteTaskPushNotificationConfig(ctx context.Cont
 	return resp, nil
 }
 
+
 // A2AServiceServer is the server API for A2AService service.
 // All implementations must embed UnimplementedA2AServiceServer
 // for forward compatibility
@@ -423,17 +426,18 @@ type A2AServiceServer interface {
 	GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (*a2a_a2apb.Task, error)
 	ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (*a2a_a2apb.ListTasksResponse, error)
 	CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (*a2a_a2apb.Task, error)
-	TaskSubscription(ctx context.Context, req *a2a_a2apb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error
-	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.CreateTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
+	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error
+	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
-	ListTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigRequest) (*a2a_a2apb.ListTaskPushNotificationConfigResponse, error)
-	GetAgentCard(ctx context.Context, req *a2a_a2apb.GetAgentCardRequest) (*a2a_a2apb.AgentCard, error)
+	ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error)
+	GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (*a2a_a2apb.AgentCard, error)
 	DeleteTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.DeleteTaskPushNotificationConfigRequest) (*emptypb.Empty, error)
 }
 
 // UnimplementedA2AServiceServer must be embedded to have forward compatible implementations.
 type UnimplementedA2AServiceServer struct {
 }
+
 
 func (UnimplementedA2AServiceServer) SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error) {
 	return nil, fmt.Errorf("method SendMessage not implemented")
@@ -455,11 +459,11 @@ func (UnimplementedA2AServiceServer) CancelTask(ctx context.Context, req *a2a_a2
 	return nil, fmt.Errorf("method CancelTask not implemented")
 }
 
-func (UnimplementedA2AServiceServer) TaskSubscription(ctx context.Context, req *a2a_a2apb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error {
-	return fmt.Errorf("method TaskSubscription not implemented")
+func (UnimplementedA2AServiceServer) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error {
+	return fmt.Errorf("method SubscribeToTask not implemented")
 }
 
-func (UnimplementedA2AServiceServer) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.CreateTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error) {
+func (UnimplementedA2AServiceServer) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error) {
 	return nil, fmt.Errorf("method CreateTaskPushNotificationConfig not implemented")
 }
 
@@ -467,32 +471,34 @@ func (UnimplementedA2AServiceServer) GetTaskPushNotificationConfig(ctx context.C
 	return nil, fmt.Errorf("method GetTaskPushNotificationConfig not implemented")
 }
 
-func (UnimplementedA2AServiceServer) ListTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigRequest) (*a2a_a2apb.ListTaskPushNotificationConfigResponse, error) {
-	return nil, fmt.Errorf("method ListTaskPushNotificationConfig not implemented")
+func (UnimplementedA2AServiceServer) ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error) {
+	return nil, fmt.Errorf("method ListTaskPushNotificationConfigs not implemented")
 }
 
-func (UnimplementedA2AServiceServer) GetAgentCard(ctx context.Context, req *a2a_a2apb.GetAgentCardRequest) (*a2a_a2apb.AgentCard, error) {
-	return nil, fmt.Errorf("method GetAgentCard not implemented")
+func (UnimplementedA2AServiceServer) GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (*a2a_a2apb.AgentCard, error) {
+	return nil, fmt.Errorf("method GetExtendedAgentCard not implemented")
 }
 
 func (UnimplementedA2AServiceServer) DeleteTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.DeleteTaskPushNotificationConfigRequest) (*emptypb.Empty, error) {
 	return nil, fmt.Errorf("method DeleteTaskPushNotificationConfig not implemented")
 }
 
+
 // RegisterA2AServiceServer registers the server with slim_bindings.
 func RegisterA2AServiceServer(server *slim_bindings.Server, impl A2AServiceServer) {
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "SendMessage", &A2AService_SendMessage_Handler{impl: impl})
-	server.RegisterUnaryStream("a2a.v1.A2AService", "SendStreamingMessage", &A2AService_SendStreamingMessage_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "GetTask", &A2AService_GetTask_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "ListTasks", &A2AService_ListTasks_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "CancelTask", &A2AService_CancelTask_Handler{impl: impl})
-	server.RegisterUnaryStream("a2a.v1.A2AService", "TaskSubscription", &A2AService_TaskSubscription_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "CreateTaskPushNotificationConfig", &A2AService_CreateTaskPushNotificationConfig_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "GetTaskPushNotificationConfig", &A2AService_GetTaskPushNotificationConfig_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "ListTaskPushNotificationConfig", &A2AService_ListTaskPushNotificationConfig_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "GetAgentCard", &A2AService_GetAgentCard_Handler{impl: impl})
-	server.RegisterUnaryUnary("a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", &A2AService_DeleteTaskPushNotificationConfig_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "SendMessage", &A2AService_SendMessage_Handler{impl: impl})
+	server.RegisterUnaryStream("lf.a2a.v1.A2AService", "SendStreamingMessage", &A2AService_SendStreamingMessage_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "GetTask", &A2AService_GetTask_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "ListTasks", &A2AService_ListTasks_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "CancelTask", &A2AService_CancelTask_Handler{impl: impl})
+	server.RegisterUnaryStream("lf.a2a.v1.A2AService", "SubscribeToTask", &A2AService_SubscribeToTask_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "CreateTaskPushNotificationConfig", &A2AService_CreateTaskPushNotificationConfig_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "GetTaskPushNotificationConfig", &A2AService_GetTaskPushNotificationConfig_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "ListTaskPushNotificationConfigs", &A2AService_ListTaskPushNotificationConfigs_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "GetExtendedAgentCard", &A2AService_GetExtendedAgentCard_Handler{impl: impl})
+	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", &A2AService_DeleteTaskPushNotificationConfig_Handler{impl: impl})
 }
+
 
 type A2AService_SendMessage_Handler struct {
 	impl A2AServiceServer
@@ -714,12 +720,12 @@ func (h *A2AService_CancelTask_Handler) Handle(request []byte, rpcContext *slim_
 	return respBytes, nil
 }
 
-type A2AService_TaskSubscription_Handler struct {
+type A2AService_SubscribeToTask_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_TaskSubscription_Handler) Handle(request []byte, rpcContext *slim_bindings.Context, sink *slim_bindings.ResponseSink) error {
-	req := &a2a_a2apb.TaskSubscriptionRequest{}
+func (h *A2AService_SubscribeToTask_Handler) Handle(request []byte, rpcContext *slim_bindings.Context, sink *slim_bindings.ResponseSink) error {
+	req := &a2a_a2apb.SubscribeToTaskRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
 		rpcErr := slim_bindings.NewRpcErrorRpc(
 			slim_bindings.RpcCodeInvalidArgument,
@@ -735,7 +741,7 @@ func (h *A2AService_TaskSubscription_Handler) Handle(request []byte, rpcContext 
 	defer cancel()
 
 	stream := slimrpc.NewServerRequestStream[*a2a_a2apb.StreamResponse](sink)
-	err := h.impl.TaskSubscription(ctx, req, stream)
+	err := h.impl.SubscribeToTask(ctx, req, stream)
 
 	// Close the stream after handler returns
 	closeErr := sink.CloseAsync()
@@ -767,7 +773,7 @@ type A2AService_CreateTaskPushNotificationConfig_Handler struct {
 }
 
 func (h *A2AService_CreateTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
-	req := &a2a_a2apb.CreateTaskPushNotificationConfigRequest{}
+	req := &a2a_a2apb.TaskPushNotificationConfig{}
 	if err := proto.Unmarshal(request, req); err != nil {
 		return nil, slim_bindings.NewRpcErrorRpc(
 			slim_bindings.RpcCodeInvalidArgument,
@@ -848,12 +854,12 @@ func (h *A2AService_GetTaskPushNotificationConfig_Handler) Handle(request []byte
 	return respBytes, nil
 }
 
-type A2AService_ListTaskPushNotificationConfig_Handler struct {
+type A2AService_ListTaskPushNotificationConfigs_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_ListTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
-	req := &a2a_a2apb.ListTaskPushNotificationConfigRequest{}
+func (h *A2AService_ListTaskPushNotificationConfigs_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+	req := &a2a_a2apb.ListTaskPushNotificationConfigsRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
 		return nil, slim_bindings.NewRpcErrorRpc(
 			slim_bindings.RpcCodeInvalidArgument,
@@ -866,7 +872,7 @@ func (h *A2AService_ListTaskPushNotificationConfig_Handler) Handle(request []byt
 	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
-	resp, err := h.impl.ListTaskPushNotificationConfig(ctx, req)
+	resp, err := h.impl.ListTaskPushNotificationConfigs(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
 		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
@@ -891,12 +897,12 @@ func (h *A2AService_ListTaskPushNotificationConfig_Handler) Handle(request []byt
 	return respBytes, nil
 }
 
-type A2AService_GetAgentCard_Handler struct {
+type A2AService_GetExtendedAgentCard_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_GetAgentCard_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
-	req := &a2a_a2apb.GetAgentCardRequest{}
+func (h *A2AService_GetExtendedAgentCard_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+	req := &a2a_a2apb.GetExtendedAgentCardRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
 		return nil, slim_bindings.NewRpcErrorRpc(
 			slim_bindings.RpcCodeInvalidArgument,
@@ -909,7 +915,7 @@ func (h *A2AService_GetAgentCard_Handler) Handle(request []byte, rpcContext *sli
 	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
-	resp, err := h.impl.GetAgentCard(ctx, req)
+	resp, err := h.impl.GetExtendedAgentCard(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
 		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
@@ -976,3 +982,5 @@ func (h *A2AService_DeleteTaskPushNotificationConfig_Handler) Handle(request []b
 	}
 	return respBytes, nil
 }
+
+

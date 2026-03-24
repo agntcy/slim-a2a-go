@@ -9,8 +9,8 @@ version: v2
 inputs:
   - git_repo: https://github.com/a2aproject/A2A.git
     # Keep in sync with github.com/a2aproject/a2a-go buf.gen.yaml
-    ref: e7cf203ecdd7003c0f1740bb712248d2b5252bf1
-    subdir: specification/grpc
+    ref: 7df7685561b19c841c5a1349653df347db8d3314
+    subdir: specification
 
 managed:
   enabled: true
@@ -31,5 +31,5 @@ plugins:
     out: a2apb
     opt:
       - paths=source_relative
-      - types_import=github.com/a2aproject/a2a-go/a2apb
+      - types_import=github.com/a2aproject/a2a-go/v2/a2apb/v1
       - types_alias=a2a_a2apb

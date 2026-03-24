@@ -16,8 +16,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/a2aproject/a2a-go/a2a"
-	a2aclient "github.com/a2aproject/a2a-go/a2aclient"
+	"github.com/a2aproject/a2a-go/v2/a2a"
+	a2aclient "github.com/a2aproject/a2a-go/v2/a2aclient"
 	slima2aclient "github.com/agntcy/slim-a2a-go/a2aclient"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
@@ -58,19 +58,19 @@ func run(endpoint, agentName, text string) error {
 	}
 
 	// Build the a2a-go client factory with SLIM RPC as the sole transport.
-	// WithDefaultsDisabled suppresses the built-in JSON-RPC and gRPC transports.
+	// WithDefaultsDisabled suppresses the built-in JSON-RPC and REST transports.
 	factory := a2aclient.NewFactory(
 		a2aclient.WithDefaultsDisabled(),
 		slima2aclient.WithSLIMRPCTransport(app, &connID),
 	)
 
-	// Construct an agent card using the agent's SLIM name as the service URL.
-	// WithSLIMRPCTransport calls slim_bindings.NameFromString on the URL to
+	// Construct an agent card with a SLIM RPC interface pointing to the agent.
+	// WithSLIMRPCTransport calls slim_bindings.NameFromString on iface.URL to
 	// derive the remote slim_bindings.Name when the channel is created.
 	card := &a2a.AgentCard{
-		URL:                agentName,
-		PreferredTransport: slima2aclient.SLIMProtocol,
-		Capabilities:       a2a.AgentCapabilities{Streaming: true},
+		SupportedInterfaces: []*a2a.AgentInterface{
+			a2a.NewAgentInterface(agentName, slima2aclient.SLIMProtocol),
+		},
 	}
 
 	// Create the A2A client from the card.
@@ -80,18 +80,18 @@ func run(endpoint, agentName, text string) error {
 	}
 	defer client.Destroy() //nolint:errcheck
 
-	params := &a2a.MessageSendParams{
+	req := &a2a.SendMessageRequest{
 		Message: &a2a.Message{
 			ID:   a2a.NewMessageID(),
 			Role: a2a.MessageRoleUser,
-			Parts: []a2a.Part{
-				a2a.TextPart{Text: text},
+			Parts: a2a.ContentParts{
+				a2a.NewTextPart(text),
 			},
 		},
 	}
 
 	slog.Info("sending message", "text", text)
-	result, err := client.SendMessage(context.Background(), params)
+	result, err := client.SendMessage(context.Background(), req)
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
@@ -109,8 +109,8 @@ func extractResult(result a2a.SendMessageResult) string {
 	case *a2a.Task:
 		for _, artifact := range r.Artifacts {
 			for _, part := range artifact.Parts {
-				if tp, ok := part.(a2a.TextPart); ok {
-					return tp.Text
+				if text, ok := part.Content.(a2a.Text); ok {
+					return string(text)
 				}
 			}
 		}
@@ -120,15 +120,15 @@ func extractResult(result a2a.SendMessageResult) string {
 	}
 }
 
-// extractText returns the concatenated text of all TextParts in msg.
+// extractText returns the concatenated text of all text parts in msg.
 func extractText(msg *a2a.Message) string {
 	if msg == nil {
 		return ""
 	}
 	out := ""
 	for _, part := range msg.Parts {
-		if tp, ok := part.(a2a.TextPart); ok {
-			out += tp.Text
+		if text, ok := part.Content.(a2a.Text); ok {
+			out += string(text)
 		}
 	}
 	return out

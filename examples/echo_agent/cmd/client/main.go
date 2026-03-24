@@ -16,7 +16,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/a2aproject/a2a-go/a2a"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	slima2aclient "github.com/agntcy/slim-a2a-go/a2aclient"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
@@ -64,19 +64,18 @@ func run(endpoint, text string) error {
 	transport := slima2aclient.NewTransport(channel)
 	defer transport.Destroy() //nolint:errcheck
 
-	msgID := a2a.NewMessageID()
-	params := &a2a.MessageSendParams{
+	req := &a2a.SendMessageRequest{
 		Message: &a2a.Message{
-			ID:   msgID,
+			ID:   a2a.NewMessageID(),
 			Role: a2a.MessageRoleUser,
-			Parts: []a2a.Part{
-				a2a.TextPart{Text: text},
+			Parts: a2a.ContentParts{
+				a2a.NewTextPart(text),
 			},
 		},
 	}
 
 	slog.Info("sending message", "text", text)
-	result, err := transport.SendMessage(context.Background(), params)
+	result, err := transport.SendMessage(context.Background(), nil, req)
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
@@ -94,8 +93,8 @@ func extractResult(result a2a.SendMessageResult) string {
 	case *a2a.Task:
 		for _, artifact := range r.Artifacts {
 			for _, part := range artifact.Parts {
-				if tp, ok := part.(a2a.TextPart); ok {
-					return tp.Text
+				if text, ok := part.Content.(a2a.Text); ok {
+					return string(text)
 				}
 			}
 		}
@@ -105,15 +104,15 @@ func extractResult(result a2a.SendMessageResult) string {
 	}
 }
 
-// extractText returns the concatenated text of all TextParts in msg.
+// extractText returns the concatenated text of all text parts in msg.
 func extractText(msg *a2a.Message) string {
 	if msg == nil {
 		return ""
 	}
 	out := ""
 	for _, part := range msg.Parts {
-		if tp, ok := part.(a2a.TextPart); ok {
-			out += tp.Text
+		if text, ok := part.Content.(a2a.Text); ok {
+			out += string(text)
 		}
 	}
 	return out

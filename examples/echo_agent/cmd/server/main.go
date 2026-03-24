@@ -13,12 +13,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"iter"
 	"log/slog"
 	"os"
 
-	"github.com/a2aproject/a2a-go/a2a"
-	"github.com/a2aproject/a2a-go/a2asrv"
-	"github.com/a2aproject/a2a-go/a2asrv/eventqueue"
+	"github.com/a2aproject/a2a-go/v2/a2a"
+	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"github.com/agntcy/slim-a2a-go/a2aserver"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
@@ -76,53 +76,43 @@ type echoExecutor struct{}
 
 var _ a2asrv.AgentExecutor = (*echoExecutor)(nil)
 
-func (e *echoExecutor) Execute(ctx context.Context, reqCtx *a2asrv.RequestContext, queue eventqueue.Queue) error {
-	// Emit submitted state for new tasks.
-	if reqCtx.StoredTask == nil {
-		submitted := a2a.NewStatusUpdateEvent(reqCtx, a2a.TaskStateSubmitted, nil)
-		if err := queue.Write(ctx, submitted); err != nil {
-			return fmt.Errorf("write submitted: %w", err)
+func (e *echoExecutor) Execute(_ context.Context, execCtx *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+	return func(yield func(a2a.Event, error) bool) {
+		// Emit submitted state for new tasks.
+		if execCtx.StoredTask == nil {
+			if !yield(a2a.NewSubmittedTask(execCtx, execCtx.Message), nil) {
+				return
+			}
 		}
+
+		if !yield(a2a.NewStatusUpdateEvent(execCtx, a2a.TaskStateWorking, nil), nil) {
+			return
+		}
+
+		// Extract text from the first part of the message and echo it back as an artifact.
+		text := extractText(execCtx.Message)
+		if !yield(a2a.NewArtifactEvent(execCtx, a2a.NewTextPart(text)), nil) {
+			return
+		}
+
+		yield(a2a.NewStatusUpdateEvent(execCtx, a2a.TaskStateCompleted, nil), nil)
 	}
-
-	working := a2a.NewStatusUpdateEvent(reqCtx, a2a.TaskStateWorking, nil)
-	if err := queue.Write(ctx, working); err != nil {
-		return fmt.Errorf("write working: %w", err)
-	}
-
-	// Extract text from the first part of the message.
-	text := extractText(reqCtx.Message)
-
-	// Echo it back as an artifact.
-	artifact := a2a.NewArtifactEvent(reqCtx, a2a.TextPart{Text: text})
-	if err := queue.Write(ctx, artifact); err != nil {
-		return fmt.Errorf("write artifact: %w", err)
-	}
-
-	// Mark the task as complete.
-	completed := a2a.NewStatusUpdateEvent(reqCtx, a2a.TaskStateCompleted, nil)
-	completed.Final = true
-	if err := queue.Write(ctx, completed); err != nil {
-		return fmt.Errorf("write completed: %w", err)
-	}
-
-	return nil
 }
 
-func (e *echoExecutor) Cancel(ctx context.Context, reqCtx *a2asrv.RequestContext, queue eventqueue.Queue) error {
-	cancelled := a2a.NewStatusUpdateEvent(reqCtx, a2a.TaskStateCanceled, nil)
-	cancelled.Final = true
-	return queue.Write(ctx, cancelled)
+func (e *echoExecutor) Cancel(_ context.Context, execCtx *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+	return func(yield func(a2a.Event, error) bool) {
+		yield(a2a.NewStatusUpdateEvent(execCtx, a2a.TaskStateCanceled, nil), nil)
+	}
 }
 
-// extractText returns the text of the first TextPart in msg, or an empty string.
+// extractText returns the text of the first text part in msg, or an empty string.
 func extractText(msg *a2a.Message) string {
 	if msg == nil {
 		return ""
 	}
 	for _, part := range msg.Parts {
-		if tp, ok := part.(a2a.TextPart); ok {
-			return tp.Text
+		if text, ok := part.Content.(a2a.Text); ok {
+			return string(text)
 		}
 	}
 	return ""
