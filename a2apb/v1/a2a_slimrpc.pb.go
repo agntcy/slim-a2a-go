@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"time"
 
+	a2a_a2apb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-bindings-go/slimrpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
-	a2a_a2apb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
 )
-
 
 // A2AServiceClient is the client API for A2AService service.
 type A2AServiceClient interface {
@@ -41,7 +40,6 @@ func NewA2AServiceClient(channel *slim_bindings.Channel) A2AServiceClient {
 		channel: channel,
 	}
 }
-
 
 func (c *A2AServiceClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error) {
 	// Serialize request
@@ -416,7 +414,6 @@ func (c *A2AServiceClientImpl) DeleteTaskPushNotificationConfig(ctx context.Cont
 	return resp, nil
 }
 
-
 // A2AServiceServer is the server API for A2AService service.
 // All implementations must embed UnimplementedA2AServiceServer
 // for forward compatibility
@@ -437,7 +434,6 @@ type A2AServiceServer interface {
 // UnimplementedA2AServiceServer must be embedded to have forward compatible implementations.
 type UnimplementedA2AServiceServer struct {
 }
-
 
 func (UnimplementedA2AServiceServer) SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error) {
 	return nil, fmt.Errorf("method SendMessage not implemented")
@@ -483,7 +479,6 @@ func (UnimplementedA2AServiceServer) DeleteTaskPushNotificationConfig(ctx contex
 	return nil, fmt.Errorf("method DeleteTaskPushNotificationConfig not implemented")
 }
 
-
 // RegisterA2AServiceServer registers the server with slim_bindings.
 func RegisterA2AServiceServer(server *slim_bindings.Server, impl A2AServiceServer) {
 	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "SendMessage", &A2AService_SendMessage_Handler{impl: impl})
@@ -498,7 +493,6 @@ func RegisterA2AServiceServer(server *slim_bindings.Server, impl A2AServiceServe
 	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "GetExtendedAgentCard", &A2AService_GetExtendedAgentCard_Handler{impl: impl})
 	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", &A2AService_DeleteTaskPushNotificationConfig_Handler{impl: impl})
 }
-
 
 type A2AService_SendMessage_Handler struct {
 	impl A2AServiceServer
@@ -982,5 +976,3 @@ func (h *A2AService_DeleteTaskPushNotificationConfig_Handler) Handle(request []b
 	}
 	return respBytes, nil
 }
-
-

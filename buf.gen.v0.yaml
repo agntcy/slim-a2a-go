@@ -21,7 +21,7 @@ managed:
     # (the v0 module), not generated here.
     - file_option: go_package
       path: a2a.proto
-      value: github.com/agntcy/slim-a2a-go/a2apb/v0;a2apb
+      value: github.com/agntcy/slim-a2a-go/a2apb
 
 plugins:
   # slimrpc service stubs for v0.3.x A2A protocol.

@@ -72,8 +72,8 @@ func run(endpoint, agentName, text, version string) error {
 	// WithDefaultsDisabled suppresses the built-in JSON-RPC and REST transports.
 	// Select the v0 or v1 transport depending on the target agent's protocol version.
 	var (
-		factoryOpt      a2aclient.FactoryOption
-		agentIface      *a2a.AgentInterface
+		factoryOpt a2aclient.FactoryOption
+		agentIface *a2a.AgentInterface
 	)
 	if version == "v0" {
 		factoryOpt = a2aslimrpcv0.WithSLIMRPCTransport(app, &connID)

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"iter"
 
+	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	a2agoClient "github.com/a2aproject/a2a-go/v2/a2aclient"
-	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 

@@ -6,8 +6,8 @@ package a2aslimrpc
 import (
 	"context"
 
-	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
+	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
