@@ -1,23 +1,24 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package a2aserver
+package a2aslimrpc
 
 import (
 	"context"
 
-	a2a "github.com/a2aproject/a2a-go/a2a"
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
-	"github.com/a2aproject/a2a-go/a2apb/pbconv"
-	"github.com/a2aproject/a2a-go/a2asrv"
+	a2a "github.com/a2aproject/a2a-go/v2/a2a"
+	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
+	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-bindings-go/slimrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
+	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
 )
 
 // Handler implements ourpb.A2AServiceServer by delegating to an a2asrv.RequestHandler.
+// It translates between the A2A v0.3.x wire format and the v2 domain types.
 type Handler struct {
 	ourpb.UnimplementedA2AServiceServer
 	handler a2asrv.RequestHandler
@@ -40,7 +41,7 @@ func (h *Handler) SendMessage(
 	if err != nil {
 		return nil, err
 	}
-	result, err := h.handler.OnSendMessage(ctx, params)
+	result, err := h.handler.SendMessage(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func (h *Handler) SendStreamingMessage(
 	if err != nil {
 		return err
 	}
-	for event, err := range h.handler.OnSendMessageStream(ctx, params) {
+	for event, err := range h.handler.SendStreamingMessage(ctx, params) {
 		if err != nil {
 			return err
 		}
@@ -76,75 +77,25 @@ func (h *Handler) GetTask(ctx context.Context, req *a2agopb.GetTaskRequest) (*a2
 	if err != nil {
 		return nil, err
 	}
-	task, err := h.handler.OnGetTask(ctx, params)
+	task, err := h.handler.GetTask(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 	return pbconv.ToProtoTask(task)
 }
 
-// fromProtoTaskState converts a proto TaskState enum value to the domain a2a.TaskState string.
-func fromProtoTaskState(state a2agopb.TaskState) a2a.TaskState {
-	switch state {
-	case a2agopb.TaskState_TASK_STATE_AUTH_REQUIRED:
-		return a2a.TaskStateAuthRequired
-	case a2agopb.TaskState_TASK_STATE_CANCELLED: //nolint:misspell // proto-generated enum name
-		return a2a.TaskStateCanceled
-	case a2agopb.TaskState_TASK_STATE_COMPLETED:
-		return a2a.TaskStateCompleted
-	case a2agopb.TaskState_TASK_STATE_FAILED:
-		return a2a.TaskStateFailed
-	case a2agopb.TaskState_TASK_STATE_INPUT_REQUIRED:
-		return a2a.TaskStateInputRequired
-	case a2agopb.TaskState_TASK_STATE_REJECTED:
-		return a2a.TaskStateRejected
-	case a2agopb.TaskState_TASK_STATE_SUBMITTED:
-		return a2a.TaskStateSubmitted
-	case a2agopb.TaskState_TASK_STATE_WORKING:
-		return a2a.TaskStateWorking
-	default:
-		return a2a.TaskStateUnspecified
-	}
-}
-
 func (h *Handler) ListTasks(
 	ctx context.Context, req *a2agopb.ListTasksRequest,
 ) (*a2agopb.ListTasksResponse, error) {
-	// Convert proto request to domain type manually (pbconv.FromProtoListTasksRequest does not exist).
-	domainReq := &a2a.ListTasksRequest{
-		ContextID:        req.GetContextId(),
-		PageSize:         int(req.GetPageSize()),
-		PageToken:        req.GetPageToken(),
-		HistoryLength:    int(req.GetHistoryLength()),
-		IncludeArtifacts: req.GetIncludeArtifacts(),
-	}
-	if req.GetStatus() != a2agopb.TaskState_TASK_STATE_UNSPECIFIED {
-		domainReq.Status = fromProtoTaskState(req.GetStatus())
-	}
-	if req.GetLastUpdatedTime() != nil {
-		t := req.GetLastUpdatedTime().AsTime()
-		domainReq.LastUpdatedAfter = &t
-	}
-
-	resp, err := h.handler.OnListTasks(ctx, domainReq)
+	params, err := pbconv.FromProtoListTasksRequest(req)
 	if err != nil {
 		return nil, err
 	}
-
-	// Build proto response manually (pbconv.ToProtoListTasksResponse does not exist).
-	protoTasks := make([]*a2agopb.Task, len(resp.Tasks))
-	for i, task := range resp.Tasks {
-		pt, err := pbconv.ToProtoTask(task)
-		if err != nil {
-			return nil, err
-		}
-		protoTasks[i] = pt
+	resp, err := h.handler.ListTasks(ctx, params)
+	if err != nil {
+		return nil, err
 	}
-	return &a2agopb.ListTasksResponse{
-		Tasks:         protoTasks,
-		NextPageToken: resp.NextPageToken,
-		TotalSize:     int32(resp.TotalSize), //nolint:gosec // page size fits in int32
-	}, nil
+	return pbconv.ToProtoListTasksResponse(resp)
 }
 
 func (h *Handler) CancelTask(
@@ -154,7 +105,7 @@ func (h *Handler) CancelTask(
 	if err != nil {
 		return nil, err
 	}
-	task, err := h.handler.OnCancelTask(ctx, &a2a.TaskIDParams{ID: taskID})
+	task, err := h.handler.CancelTask(ctx, &a2a.CancelTaskRequest{ID: taskID})
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +121,7 @@ func (h *Handler) TaskSubscription(
 	if err != nil {
 		return err
 	}
-	for event, err := range h.handler.OnResubscribeToTask(ctx, &a2a.TaskIDParams{ID: taskID}) {
+	for event, err := range h.handler.SubscribeToTask(ctx, &a2a.SubscribeToTaskRequest{ID: taskID}) {
 		if err != nil {
 			return err
 		}
@@ -193,7 +144,7 @@ func (h *Handler) CreateTaskPushNotificationConfig(
 	if err != nil {
 		return nil, err
 	}
-	result, err := h.handler.OnSetTaskPushConfig(ctx, params)
+	result, err := h.handler.CreateTaskPushConfig(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +159,7 @@ func (h *Handler) GetTaskPushNotificationConfig(
 	if err != nil {
 		return nil, err
 	}
-	result, err := h.handler.OnGetTaskPushConfig(ctx, params)
+	result, err := h.handler.GetTaskPushConfig(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -219,19 +170,22 @@ func (h *Handler) ListTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.ListTaskPushNotificationConfigRequest,
 ) (*a2agopb.ListTaskPushNotificationConfigResponse, error) {
-	taskID, err := pbconv.ExtractTaskID(req.GetParent())
+	params, err := pbconv.FromProtoListTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
-	results, err := h.handler.OnListTaskPushConfig(ctx, &a2a.ListTaskPushConfigParams{TaskID: taskID})
+	configs, err := h.handler.ListTaskPushConfigs(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoListTaskPushConfig(results)
+	resp := &a2a.ListTaskPushConfigResponse{Configs: configs}
+	return pbconv.ToProtoListTaskPushConfigResponse(resp)
 }
 
-func (h *Handler) GetAgentCard(ctx context.Context, _ *a2agopb.GetAgentCardRequest) (*a2agopb.AgentCard, error) {
-	card, err := h.handler.OnGetExtendedAgentCard(ctx)
+func (h *Handler) GetAgentCard(
+	ctx context.Context, _ *a2agopb.GetAgentCardRequest,
+) (*a2agopb.AgentCard, error) {
+	card, err := h.handler.GetExtendedAgentCard(ctx, &a2a.GetExtendedAgentCardRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +200,7 @@ func (h *Handler) DeleteTaskPushNotificationConfig(
 	if err != nil {
 		return nil, err
 	}
-	if err := h.handler.OnDeleteTaskPushConfig(ctx, params); err != nil {
+	if err := h.handler.DeleteTaskPushConfig(ctx, params); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
