@@ -7,6 +7,9 @@
 // Usage:
 //
 //	go run ./examples/echo_agent/cmd/server --slim-endpoint http://127.0.0.1:46357
+//	go run ./examples/echo_agent/cmd/server --a2a-version v0   # v0.3.x only
+//	go run ./examples/echo_agent/cmd/server --a2a-version v1   # v1.0 only
+//	go run ./examples/echo_agent/cmd/server --a2a-version both # both (default)
 package main
 
 import (
@@ -19,23 +22,30 @@ import (
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
+	a2aslimrpcv0 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v0"
+	a2aslimrpcv1 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
 func main() {
 	endpoint := flag.String("slim-endpoint", "http://127.0.0.1:46357", "SLIM node endpoint")
+	version := flag.String("a2a-version", "both", "A2A protocol version to serve: v0, v1, or both")
 	flag.Parse()
 
-	slog.Info("starting echo agent server", "endpoint", *endpoint)
+	if *version != "v0" && *version != "v1" && *version != "both" {
+		slog.Error("invalid --a2a-version; must be v0, v1, or both", "value", *version)
+		os.Exit(1)
+	}
 
-	if err := run(*endpoint); err != nil {
+	slog.Info("starting echo agent server", "endpoint", *endpoint, "a2a-version", *version)
+
+	if err := run(*endpoint, *version); err != nil {
 		slog.Error("server error", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(endpoint string) error {
+func run(endpoint, version string) error {
 	// Initialise the SLIM runtime.
 	slim_bindings.InitializeWithDefaults()
 	svc := slim_bindings.GetGlobalService()
@@ -61,10 +71,18 @@ func run(endpoint string) error {
 	// Build the A2A request handler wrapping our echo executor.
 	requestHandler := a2asrv.NewHandler(&echoExecutor{})
 
-	// Wrap it in the SLIM server adapter and register with the SLIM server.
-	slimHandler := a2aslimrpc.NewHandler(requestHandler)
+	// Register protocol handler(s) with the SLIM server.
+	// v0 and v1 use different service names on the wire so both can coexist.
 	server := slim_bindings.ServerNewWithConnection(app, name, &connID)
-	slimHandler.RegisterWith(server)
+	switch version {
+	case "v0":
+		a2aslimrpcv0.NewHandler(requestHandler).RegisterWith(server)
+	case "v1":
+		a2aslimrpcv1.NewHandler(requestHandler).RegisterWith(server)
+	default: // "both"
+		a2aslimrpcv0.NewHandler(requestHandler).RegisterWith(server)
+		a2aslimrpcv1.NewHandler(requestHandler).RegisterWith(server)
+	}
 
 	slog.Info("echo agent ready", "slim_name", "agntcy/demo/echo_agent")
 	return server.Serve()
