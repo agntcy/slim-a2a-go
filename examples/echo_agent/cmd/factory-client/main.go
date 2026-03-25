@@ -18,7 +18,7 @@ import (
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	a2aclient "github.com/a2aproject/a2a-go/v2/a2aclient"
-	slima2aclient "github.com/agntcy/slim-a2a-go/a2aclient"
+	a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
@@ -61,7 +61,7 @@ func run(endpoint, agentName, text string) error {
 	// WithDefaultsDisabled suppresses the built-in JSON-RPC and REST transports.
 	factory := a2aclient.NewFactory(
 		a2aclient.WithDefaultsDisabled(),
-		slima2aclient.WithSLIMRPCTransport(app, &connID),
+		a2aslimrpc.WithSLIMRPCTransport(app, &connID),
 	)
 
 	// Construct an agent card with a SLIM RPC interface pointing to the agent.
@@ -69,7 +69,7 @@ func run(endpoint, agentName, text string) error {
 	// derive the remote slim_bindings.Name when the channel is created.
 	card := &a2a.AgentCard{
 		SupportedInterfaces: []*a2a.AgentInterface{
-			a2a.NewAgentInterface(agentName, slima2aclient.SLIMProtocol),
+			a2a.NewAgentInterface(agentName, a2aslimrpc.SLIMProtocol),
 		},
 	}
 

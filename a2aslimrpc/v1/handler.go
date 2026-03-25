@@ -1,7 +1,7 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package a2aserver
+package a2aslimrpc
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/agntcy/slim-bindings-go/slimrpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
+	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v1"
 )
 
 // Handler implements ourpb.A2AServiceServer by delegating to an a2asrv.RequestHandler.

@@ -1,0 +1,34 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+#
+# Run: task generate
+# (installs protoc-gen-slimrpc-go via cargo if not already present)
+
+version: v2
+
+inputs:
+  - git_repo: https://github.com/a2aproject/A2A.git
+    # Keep in sync with github.com/a2aproject/a2a-go buf.gen.yaml (v0 spec)
+    ref: e7cf203ecdd7003c0f1740bb712248d2b5252bf1
+    subdir: specification/grpc
+
+managed:
+  enabled: true
+  override:
+    # Redirect the generated Go package to our module so that:
+    #   - the slimrpc plugin emits service stubs into a2apb/v0/
+    # Message types are imported from github.com/a2aproject/a2a-go/a2apb
+    # (the v0 module), not generated here.
+    - file_option: go_package
+      path: a2a.proto
+      value: github.com/agntcy/slim-a2a-go/a2apb/v0;a2apb
+
+plugins:
+  # slimrpc service stubs for v0.3.x A2A protocol.
+  # Requires protoc-gen-slimrpc-go in PATH.
+  - local: protoc-gen-slimrpc-go
+    out: a2apb/v0
+    opt:
+      - paths=source_relative
+      - types_import=github.com/a2aproject/a2a-go/a2apb
+      - types_alias=a2a_a2apb

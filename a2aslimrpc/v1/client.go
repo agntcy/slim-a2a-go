@@ -1,7 +1,7 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package a2aclient
+package a2aslimrpc
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2apb/v1/pbconv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 
-	ourpb "github.com/agntcy/slim-a2a-go/a2apb"
+	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v1"
 )
 
 // SLIMProtocol is the transport protocol identifier for SLIM RPC.
@@ -37,7 +37,7 @@ func NewTransport(channel *slim_bindings.Channel) *Transport {
 }
 
 // WithSLIMRPCTransport returns an [a2aclient.FactoryOption] that registers the
-// SLIM RPC transport with the client factory.
+// SLIM RPC transport with the client factory for A2A protocol v1.0.
 //
 // app and connID are the pre-established SLIM app and connection — set these
 // up with slim_bindings before calling [a2aclient.NewFactory]. The url

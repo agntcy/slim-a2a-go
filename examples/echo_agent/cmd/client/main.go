@@ -17,7 +17,7 @@ import (
 	"os"
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
-	slima2aclient "github.com/agntcy/slim-a2a-go/a2aclient"
+	a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
@@ -61,7 +61,7 @@ func run(endpoint, text string) error {
 	defer channel.Destroy()
 
 	// Create the SLIM transport and send the message.
-	transport := slima2aclient.NewTransport(channel)
+	transport := a2aslimrpc.NewTransport(channel)
 	defer transport.Destroy() //nolint:errcheck
 
 	req := &a2a.SendMessageRequest{

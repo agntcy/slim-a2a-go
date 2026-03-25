@@ -19,7 +19,7 @@ import (
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	"github.com/agntcy/slim-a2a-go/a2aserver"
+	a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 )
 
@@ -62,7 +62,7 @@ func run(endpoint string) error {
 	requestHandler := a2asrv.NewHandler(&echoExecutor{})
 
 	// Wrap it in the SLIM server adapter and register with the SLIM server.
-	slimHandler := a2aserver.NewHandler(requestHandler)
+	slimHandler := a2aslimrpc.NewHandler(requestHandler)
 	server := slim_bindings.ServerNewWithConnection(app, name, &connID)
 	slimHandler.RegisterWith(server)
 

@@ -40,8 +40,9 @@ tasks:
       - cargo install agntcy-protoc-slimrpc-plugin
 
   generate:
-    desc: Generate protobuf and slimrpc stubs into a2apb/ (requires buf and cargo)
+    desc: Generate protobuf and slimrpc stubs into a2apb/v0/ and a2apb/v1/ (requires buf and cargo)
     deps:
       - install-slimrpc-compiler
     cmds:
       - buf generate
+      - buf generate --template buf.gen.v0.yaml
