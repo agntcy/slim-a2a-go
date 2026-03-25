@@ -24,7 +24,7 @@ slimctl slim start --endpoint 127.0.0.1:46357
 ## Run the echo agent server
 
 ```bash
-go run ./examples/echo_agent/cmd/server
+GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go run ./examples/echo_agent/cmd/server
 ```
 
 Optional flags:
@@ -33,7 +33,7 @@ Optional flags:
 ## Run the echo agent client
 
 ```bash
-go run ./examples/echo_agent/cmd/client --text "hi, this is a text message"
+GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go run ./examples/echo_agent/cmd/client --text "hi, this is a text message"
 ```
 
 Expected output:
