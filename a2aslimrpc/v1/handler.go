@@ -8,7 +8,6 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	a2agopb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
-	"github.com/a2aproject/a2a-go/v2/a2apb/v1/pbconv"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 	"github.com/agntcy/slim-bindings-go/slimrpc"
@@ -21,11 +20,16 @@ import (
 type Handler struct {
 	ourpb.UnimplementedA2AServiceServer
 	handler a2asrv.RequestHandler
+	conv    handlerConverter
 }
 
 // NewHandler creates a new SLIM server handler wrapping the given RequestHandler.
-func NewHandler(handler a2asrv.RequestHandler) *Handler {
-	return &Handler{handler: handler}
+func NewHandler(handler a2asrv.RequestHandler, opts ...HandlerOption) *Handler {
+	h := &Handler{handler: handler, conv: defaultHandlerConverter{}}
+	for _, o := range opts {
+		o(h)
+	}
+	return h
 }
 
 // RegisterWith registers the A2A service with a SLIM server.
@@ -36,7 +40,7 @@ func (h *Handler) RegisterWith(s *slim_bindings.Server) {
 func (h *Handler) SendMessage(
 	ctx context.Context, req *a2agopb.SendMessageRequest,
 ) (*a2agopb.SendMessageResponse, error) {
-	params, err := pbconv.FromProtoSendMessageRequest(req)
+	params, err := h.conv.FromProtoSendMessageRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +48,7 @@ func (h *Handler) SendMessage(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoSendMessageResponse(result)
+	return h.conv.ToProtoSendMessageResponse(result)
 }
 
 func (h *Handler) SendStreamingMessage(
@@ -52,7 +56,7 @@ func (h *Handler) SendStreamingMessage(
 	req *a2agopb.SendMessageRequest,
 	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
 ) error {
-	params, err := pbconv.FromProtoSendMessageRequest(req)
+	params, err := h.conv.FromProtoSendMessageRequest(req)
 	if err != nil {
 		return err
 	}
@@ -60,7 +64,7 @@ func (h *Handler) SendStreamingMessage(
 		if err != nil {
 			return err
 		}
-		pbEvt, err := pbconv.ToProtoStreamResponse(event)
+		pbEvt, err := h.conv.ToProtoStreamResponse(event)
 		if err != nil {
 			return err
 		}
@@ -72,7 +76,7 @@ func (h *Handler) SendStreamingMessage(
 }
 
 func (h *Handler) GetTask(ctx context.Context, req *a2agopb.GetTaskRequest) (*a2agopb.Task, error) {
-	params, err := pbconv.FromProtoGetTaskRequest(req)
+	params, err := h.conv.FromProtoGetTaskRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +84,13 @@ func (h *Handler) GetTask(ctx context.Context, req *a2agopb.GetTaskRequest) (*a2
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoTask(task)
+	return h.conv.ToProtoTask(task)
 }
 
 func (h *Handler) ListTasks(
 	ctx context.Context, req *a2agopb.ListTasksRequest,
 ) (*a2agopb.ListTasksResponse, error) {
-	params, err := pbconv.FromProtoListTasksRequest(req)
+	params, err := h.conv.FromProtoListTasksRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -94,13 +98,13 @@ func (h *Handler) ListTasks(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoListTasksResponse(resp)
+	return h.conv.ToProtoListTasksResponse(resp)
 }
 
 func (h *Handler) CancelTask(
 	ctx context.Context, req *a2agopb.CancelTaskRequest,
 ) (*a2agopb.Task, error) {
-	params, err := pbconv.FromProtoCancelTaskRequest(req)
+	params, err := h.conv.FromProtoCancelTaskRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +112,7 @@ func (h *Handler) CancelTask(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoTask(task)
+	return h.conv.ToProtoTask(task)
 }
 
 func (h *Handler) SubscribeToTask(
@@ -116,7 +120,7 @@ func (h *Handler) SubscribeToTask(
 	req *a2agopb.SubscribeToTaskRequest,
 	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
 ) error {
-	params, err := pbconv.FromProtoSubscribeToTaskRequest(req)
+	params, err := h.conv.FromProtoSubscribeToTaskRequest(req)
 	if err != nil {
 		return err
 	}
@@ -124,7 +128,7 @@ func (h *Handler) SubscribeToTask(
 		if err != nil {
 			return err
 		}
-		pbEvt, err := pbconv.ToProtoStreamResponse(event)
+		pbEvt, err := h.conv.ToProtoStreamResponse(event)
 		if err != nil {
 			return err
 		}
@@ -139,7 +143,7 @@ func (h *Handler) CreateTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.TaskPushNotificationConfig,
 ) (*a2agopb.TaskPushNotificationConfig, error) {
-	params, err := pbconv.FromProtoCreateTaskPushConfigRequest(req)
+	params, err := h.conv.FromProtoCreateTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -147,14 +151,14 @@ func (h *Handler) CreateTaskPushNotificationConfig(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoTaskPushConfig(result)
+	return h.conv.ToProtoTaskPushConfig(result)
 }
 
 func (h *Handler) GetTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.GetTaskPushNotificationConfigRequest,
 ) (*a2agopb.TaskPushNotificationConfig, error) {
-	params, err := pbconv.FromProtoGetTaskPushConfigRequest(req)
+	params, err := h.conv.FromProtoGetTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -162,14 +166,14 @@ func (h *Handler) GetTaskPushNotificationConfig(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoTaskPushConfig(result)
+	return h.conv.ToProtoTaskPushConfig(result)
 }
 
 func (h *Handler) ListTaskPushNotificationConfigs(
 	ctx context.Context,
 	req *a2agopb.ListTaskPushNotificationConfigsRequest,
 ) (*a2agopb.ListTaskPushNotificationConfigsResponse, error) {
-	params, err := pbconv.FromProtoListTaskPushConfigRequest(req)
+	params, err := h.conv.FromProtoListTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -178,13 +182,13 @@ func (h *Handler) ListTaskPushNotificationConfigs(
 		return nil, err
 	}
 	resp := &a2a.ListTaskPushConfigResponse{Configs: configs}
-	return pbconv.ToProtoListTaskPushConfigResponse(resp)
+	return h.conv.ToProtoListTaskPushConfigResponse(resp)
 }
 
 func (h *Handler) GetExtendedAgentCard(
 	ctx context.Context, req *a2agopb.GetExtendedAgentCardRequest,
 ) (*a2agopb.AgentCard, error) {
-	params, err := pbconv.FromProtoGetExtendedAgentCardRequest(req)
+	params, err := h.conv.FromProtoGetExtendedAgentCardRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -192,14 +196,14 @@ func (h *Handler) GetExtendedAgentCard(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.ToProtoAgentCard(card)
+	return h.conv.ToProtoAgentCard(card)
 }
 
 func (h *Handler) DeleteTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.DeleteTaskPushNotificationConfigRequest,
 ) (*emptypb.Empty, error) {
-	params, err := pbconv.FromProtoDeleteTaskPushConfigRequest(req)
+	params, err := h.conv.FromProtoDeleteTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
