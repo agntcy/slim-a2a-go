@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+
 	"os"
 	"reflect"
 	"sort"
@@ -318,10 +319,16 @@ var defaultSubscribeToTaskFn = func(_ context.Context, req *a2a.SubscribeToTaskR
 func TestHandler_GetTask(t *testing.T) {
 	ctx := t.Context()
 	taskID := a2a.TaskID("test-task")
+	badMetaTaskID := a2a.TaskID("bad-meta-task")
 	historyLen := int(10)
 	mockHandler := &mockRequestHandler{
 		tasks: map[a2a.TaskID]*a2a.Task{
 			taskID: {ID: taskID, ContextID: "test-context", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}},
+			badMetaTaskID: {
+				ID: badMetaTaskID, ContextID: "test-context",
+				Status:   a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+				Metadata: map[string]any{"bad": struct{}{}},
+			},
 		},
 	}
 	client := startTestServer(t, mockHandler)
@@ -356,6 +363,11 @@ func TestHandler_GetTask(t *testing.T) {
 		{
 			name:    "handler error",
 			req:     &a2agopb.GetTaskRequest{Id: "handler-error"},
+			wantErr: true,
+		},
+		{
+			name:    "response conversion error",
+			req:     &a2agopb.GetTaskRequest{Id: string(badMetaTaskID)},
 			wantErr: true,
 		},
 	}
@@ -452,14 +464,37 @@ func TestHandler_ListTasks(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("response conversion error", func(t *testing.T) {
+		badMetaID := a2a.TaskID("bad-meta-list-task")
+		badMock := &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				badMetaID: {
+					ID: badMetaID, ContextID: "bad-ctx",
+					Status:   a2a.TaskStatus{State: a2a.TaskStateSubmitted},
+					Metadata: map[string]any{"bad": struct{}{}},
+				},
+			},
+		}
+		badClient := startTestServer(t, badMock)
+		_, err := badClient.ListTasks(ctx, &a2agopb.ListTasksRequest{})
+		if err == nil {
+			t.Fatal("ListTasks() expected error from response conversion, got nil")
+		}
+	})
 }
 
 func TestHandler_CancelTask(t *testing.T) {
 	ctx := t.Context()
 	taskID := a2a.TaskID("test-task")
+	badMetaTaskID := a2a.TaskID("bad-meta-task")
 	mockHandler := &mockRequestHandler{
 		tasks: map[a2a.TaskID]*a2a.Task{
 			taskID: {ID: taskID, ContextID: "test-context"},
+			badMetaTaskID: {
+				ID: badMetaTaskID, ContextID: "test-context",
+				Metadata: map[string]any{"bad": struct{}{}},
+			},
 		},
 	}
 	client := startTestServer(t, mockHandler)
@@ -480,6 +515,11 @@ func TestHandler_CancelTask(t *testing.T) {
 		{
 			name:    "handler error",
 			req:     &a2agopb.CancelTaskRequest{Id: "handler-error"},
+			wantErr: true,
+		},
+		{
+			name:    "response conversion error",
+			req:     &a2agopb.CancelTaskRequest{Id: string(badMetaTaskID)},
 			wantErr: true,
 		},
 	}
@@ -760,6 +800,40 @@ func TestHandler_SendStreamingMessage(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("response conversion error", func(t *testing.T) {
+		badStreamMock := &mockRequestHandler{
+			SendMessageStreamFunc: func(_ context.Context, _ *a2a.SendMessageRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					// Yield a Task with NaN metadata — ToProtoStreamResponse will fail.
+					task := &a2a.Task{
+						ID:       "conv-err",
+						Status:   a2a.TaskStatus{State: a2a.TaskStateWorking},
+						Metadata: map[string]any{"bad": struct{}{}},
+					}
+					yield(task, nil)
+				}
+			},
+		}
+		badClient := startTestServer(t, badStreamMock)
+		stream, err := badClient.SendStreamingMessage(ctx, &a2agopb.SendMessageRequest{
+			Message: &a2agopb.Message{
+				MessageId: "conv-err-msg",
+				Role:      a2agopb.Role_ROLE_USER,
+				Parts:     []*a2agopb.Part{{Content: &a2agopb.Part_Text{Text: "trigger"}}},
+			},
+		})
+		if err != nil {
+			return // error at setup is acceptable
+		}
+		for {
+			resp, err := stream.Recv()
+			if err != nil || resp == nil {
+				return // error or stream end — expected
+			}
+			t.Fatalf("expected stream to end with error, got response: %v", resp)
+		}
+	})
 }
 
 func TestHandler_SubscribeToTask(t *testing.T) {
@@ -864,6 +938,34 @@ func TestHandler_SubscribeToTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("response conversion error", func(t *testing.T) {
+		badSubMock := &mockRequestHandler{
+			SubscribeToTaskFunc: func(_ context.Context, _ *a2a.SubscribeToTaskRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					// Yield a Task with NaN metadata — ToProtoStreamResponse will fail.
+					task := &a2a.Task{
+						ID:       "conv-err-sub",
+						Status:   a2a.TaskStatus{State: a2a.TaskStateWorking},
+						Metadata: map[string]any{"bad": struct{}{}},
+					}
+					yield(task, nil)
+				}
+			},
+		}
+		badClient := startTestServer(t, badSubMock)
+		stream, err := badClient.SubscribeToTask(ctx, &a2agopb.SubscribeToTaskRequest{Id: "any-task"})
+		if err != nil {
+			return // error at setup is acceptable
+		}
+		for {
+			resp, err := stream.Recv()
+			if err != nil || resp == nil {
+				return // error or stream end — expected
+			}
+			t.Fatalf("expected stream to end with error, got response: %v", resp)
+		}
+	})
 }
 
 func TestHandler_CreateTaskPushNotificationConfig(t *testing.T) {

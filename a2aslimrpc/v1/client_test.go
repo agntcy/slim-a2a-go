@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+
 	"reflect"
 	"sort"
 	"testing"
@@ -234,6 +235,18 @@ func TestTransport_SendMessage(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "to proto error",
+			req: &a2a.SendMessageRequest{
+				Message: &a2a.Message{
+					ID:       "bad-meta",
+					Role:     a2a.MessageRoleUser,
+					Parts:    a2a.ContentParts{a2a.NewTextPart("trigger")},
+					Metadata: map[string]any{"bad": struct{}{}},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -265,6 +278,10 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 		sendStreamingMessageFn: func(_ context.Context, req *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
 			if req.GetMessage().GetMessageId() == "trigger-error" {
 				return errors.New("mock server stream error")
+			}
+			if req.GetMessage().GetMessageId() == "nil-payload" {
+				// Send a bare StreamResponse (no payload) to trigger FromProtoStreamResponse error.
+				return stream.Send(&a2agopb.StreamResponse{})
 			}
 			tID := req.GetMessage().GetTaskId()
 			cID := req.GetMessage().GetContextId()
@@ -338,6 +355,17 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "nil payload response",
+			req: &a2a.SendMessageRequest{
+				Message: &a2a.Message{
+					ID:    "nil-payload",
+					Role:  a2a.MessageRoleUser,
+					Parts: a2a.ContentParts{a2a.NewTextPart("trigger")},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -369,6 +397,29 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("consumer stops early", func(t *testing.T) {
+		seq := transport.SendStreamingMessage(ctx, nil, &a2a.SendMessageRequest{
+			Message: &a2a.Message{
+				ID:        msgID,
+				TaskID:    taskID,
+				ContextID: contextID,
+				Role:      a2a.MessageRoleUser,
+				Parts:     a2a.ContentParts{a2a.NewTextPart("streaming hello")},
+			},
+		})
+		var count int
+		for _, err := range seq {
+			if err != nil {
+				t.Fatalf("unexpected error before break: %v", err)
+			}
+			count++
+			break // stop early to exercise the !yield branch in the iterator
+		}
+		if count == 0 {
+			t.Fatal("consumer stops early: expected at least 1 event before break")
+		}
+	})
 }
 
 func TestTransport_GetTask(t *testing.T) {
@@ -589,6 +640,10 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 			if req.GetId() == "handler-error" {
 				return errors.New("subscribe error")
 			}
+			if req.GetId() == "nil-payload" {
+				// Send a bare StreamResponse (no payload) to trigger FromProtoStreamResponse error.
+				return stream.Send(&a2agopb.StreamResponse{})
+			}
 			responses := []*a2agopb.StreamResponse{
 				{
 					Payload: &a2agopb.StreamResponse_Task{
@@ -635,6 +690,11 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 			req:     &a2a.SubscribeToTaskRequest{ID: "handler-error"},
 			wantErr: true,
 		},
+		{
+			name:    "nil payload response",
+			req:     &a2a.SubscribeToTaskRequest{ID: "nil-payload"},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -662,6 +722,21 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("consumer stops early", func(t *testing.T) {
+		seq := transport.SubscribeToTask(ctx, nil, &a2a.SubscribeToTaskRequest{ID: taskID})
+		var count int
+		for _, err := range seq {
+			if err != nil {
+				t.Fatalf("unexpected error before break: %v", err)
+			}
+			count++
+			break // stop early to exercise the !yield branch in the iterator
+		}
+		if count == 0 {
+			t.Fatal("consumer stops early: expected at least 1 event before break")
+		}
+	})
 }
 
 func TestTransport_CreateTaskPushConfig(t *testing.T) {
@@ -797,6 +872,14 @@ func TestTransport_ListTaskPushConfigs(t *testing.T) {
 			if req.GetTaskId() == "handler-error" {
 				return nil, errors.New("list configs error")
 			}
+			if req.GetTaskId() == "trigger-conv-error" {
+				// Return a config with empty TaskId to trigger FromProtoTaskPushConfig error.
+				return &a2agopb.ListTaskPushNotificationConfigsResponse{
+					Configs: []*a2agopb.TaskPushNotificationConfig{
+						{TaskId: "", Id: "some-id", Url: "https://example.com"},
+					},
+				}, nil
+			}
 			return &a2agopb.ListTaskPushNotificationConfigsResponse{
 				Configs: []*a2agopb.TaskPushNotificationConfig{
 					{TaskId: req.GetTaskId(), Id: fmt.Sprintf("%s-1", configID), Url: "https://example.com/hook1"},
@@ -824,6 +907,11 @@ func TestTransport_ListTaskPushConfigs(t *testing.T) {
 		{
 			name:    "handler error",
 			req:     &a2a.ListTaskPushConfigRequest{TaskID: "handler-error"},
+			wantErr: true,
+		},
+		{
+			name:    "response conversion error",
+			req:     &a2a.ListTaskPushConfigRequest{TaskID: "trigger-conv-error"},
 			wantErr: true,
 		},
 	}
