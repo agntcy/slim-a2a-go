@@ -1083,151 +1083,8 @@ func TestTransport_Destroy(t *testing.T) {
 	}
 }
 
-// mockTransportConverter implements transportConverter with configurable function fields.
-// Unset methods fall through to the real pbconv package.
-type mockTransportConverter struct {
-	toProtoSendMessageRequestFn           func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error)
-	toProtoGetTaskRequestFn               func(*a2a.GetTaskRequest) (*a2agopb.GetTaskRequest, error)
-	toProtoCancelTaskRequestFn            func(*a2a.CancelTaskRequest) (*a2agopb.CancelTaskRequest, error)
-	toProtoSubscribeToTaskRequestFn       func(*a2a.SubscribeToTaskRequest) (*a2agopb.SubscribeToTaskRequest, error)
-	toProtoListTasksRequestFn             func(*a2a.ListTasksRequest) (*a2agopb.ListTasksRequest, error)
-	toProtoCreateTaskPushConfigRequestFn  func(*a2a.CreateTaskPushConfigRequest) (*a2agopb.TaskPushNotificationConfig, error)
-	toProtoGetTaskPushConfigRequestFn     func(*a2a.GetTaskPushConfigRequest) (*a2agopb.GetTaskPushNotificationConfigRequest, error)
-	toProtoListTaskPushConfigRequestFn    func(*a2a.ListTaskPushConfigRequest) (*a2agopb.ListTaskPushNotificationConfigsRequest, error)
-	toProtoDeleteTaskPushConfigRequestFn  func(*a2a.DeleteTaskPushConfigRequest) (*a2agopb.DeleteTaskPushNotificationConfigRequest, error)
-	toProtoGetExtendedAgentCardRequestFn  func(*a2a.GetExtendedAgentCardRequest) (*a2agopb.GetExtendedAgentCardRequest, error)
-	fromProtoSendMessageResponseFn        func(*a2agopb.SendMessageResponse) (a2a.SendMessageResult, error)
-	fromProtoStreamResponseFn             func(*a2agopb.StreamResponse) (a2a.Event, error)
-	fromProtoTaskFn                       func(*a2agopb.Task) (*a2a.Task, error)
-	fromProtoListTasksResponseFn          func(*a2agopb.ListTasksResponse) (*a2a.ListTasksResponse, error)
-	fromProtoTaskPushConfigFn             func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error)
-	fromProtoListTaskPushConfigResponseFn func(*a2agopb.ListTaskPushNotificationConfigsResponse) (*a2a.ListTaskPushConfigResponse, error)
-	fromProtoAgentCardFn                  func(*a2agopb.AgentCard) (*a2a.AgentCard, error)
-}
-
-var _ transportConverter = (*mockTransportConverter)(nil)
-
-func (m *mockTransportConverter) ToProtoSendMessageRequest(req *a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
-	if m.toProtoSendMessageRequestFn != nil {
-		return m.toProtoSendMessageRequestFn(req)
-	}
-	return pbconv.ToProtoSendMessageRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoGetTaskRequest(req *a2a.GetTaskRequest) (*a2agopb.GetTaskRequest, error) {
-	if m.toProtoGetTaskRequestFn != nil {
-		return m.toProtoGetTaskRequestFn(req)
-	}
-	return pbconv.ToProtoGetTaskRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoCancelTaskRequest(req *a2a.CancelTaskRequest) (*a2agopb.CancelTaskRequest, error) {
-	if m.toProtoCancelTaskRequestFn != nil {
-		return m.toProtoCancelTaskRequestFn(req)
-	}
-	return pbconv.ToProtoCancelTaskRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoSubscribeToTaskRequest(req *a2a.SubscribeToTaskRequest) (*a2agopb.SubscribeToTaskRequest, error) {
-	if m.toProtoSubscribeToTaskRequestFn != nil {
-		return m.toProtoSubscribeToTaskRequestFn(req)
-	}
-	return pbconv.ToProtoSubscribeToTaskRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoListTasksRequest(req *a2a.ListTasksRequest) (*a2agopb.ListTasksRequest, error) {
-	if m.toProtoListTasksRequestFn != nil {
-		return m.toProtoListTasksRequestFn(req)
-	}
-	return pbconv.ToProtoListTasksRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoCreateTaskPushConfigRequest(req *a2a.CreateTaskPushConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
-	if m.toProtoCreateTaskPushConfigRequestFn != nil {
-		return m.toProtoCreateTaskPushConfigRequestFn(req)
-	}
-	return pbconv.ToProtoCreateTaskPushConfigRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoGetTaskPushConfigRequest(req *a2a.GetTaskPushConfigRequest) (*a2agopb.GetTaskPushNotificationConfigRequest, error) {
-	if m.toProtoGetTaskPushConfigRequestFn != nil {
-		return m.toProtoGetTaskPushConfigRequestFn(req)
-	}
-	return pbconv.ToProtoGetTaskPushConfigRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoListTaskPushConfigRequest(req *a2a.ListTaskPushConfigRequest) (*a2agopb.ListTaskPushNotificationConfigsRequest, error) {
-	if m.toProtoListTaskPushConfigRequestFn != nil {
-		return m.toProtoListTaskPushConfigRequestFn(req)
-	}
-	return pbconv.ToProtoListTaskPushConfigRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoDeleteTaskPushConfigRequest(req *a2a.DeleteTaskPushConfigRequest) (*a2agopb.DeleteTaskPushNotificationConfigRequest, error) {
-	if m.toProtoDeleteTaskPushConfigRequestFn != nil {
-		return m.toProtoDeleteTaskPushConfigRequestFn(req)
-	}
-	return pbconv.ToProtoDeleteTaskPushConfigRequest(req)
-}
-
-func (m *mockTransportConverter) ToProtoGetExtendedAgentCardRequest(req *a2a.GetExtendedAgentCardRequest) (*a2agopb.GetExtendedAgentCardRequest, error) {
-	if m.toProtoGetExtendedAgentCardRequestFn != nil {
-		return m.toProtoGetExtendedAgentCardRequestFn(req)
-	}
-	return pbconv.ToProtoGetExtendedAgentCardRequest(req)
-}
-
-func (m *mockTransportConverter) FromProtoSendMessageResponse(resp *a2agopb.SendMessageResponse) (a2a.SendMessageResult, error) {
-	if m.fromProtoSendMessageResponseFn != nil {
-		return m.fromProtoSendMessageResponseFn(resp)
-	}
-	return pbconv.FromProtoSendMessageResponse(resp)
-}
-
-func (m *mockTransportConverter) FromProtoStreamResponse(resp *a2agopb.StreamResponse) (a2a.Event, error) {
-	if m.fromProtoStreamResponseFn != nil {
-		return m.fromProtoStreamResponseFn(resp)
-	}
-	return pbconv.FromProtoStreamResponse(resp)
-}
-
-func (m *mockTransportConverter) FromProtoTask(resp *a2agopb.Task) (*a2a.Task, error) {
-	if m.fromProtoTaskFn != nil {
-		return m.fromProtoTaskFn(resp)
-	}
-	return pbconv.FromProtoTask(resp)
-}
-
-func (m *mockTransportConverter) FromProtoListTasksResponse(resp *a2agopb.ListTasksResponse) (*a2a.ListTasksResponse, error) {
-	if m.fromProtoListTasksResponseFn != nil {
-		return m.fromProtoListTasksResponseFn(resp)
-	}
-	return pbconv.FromProtoListTasksResponse(resp)
-}
-
-func (m *mockTransportConverter) FromProtoTaskPushConfig(resp *a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
-	if m.fromProtoTaskPushConfigFn != nil {
-		return m.fromProtoTaskPushConfigFn(resp)
-	}
-	return pbconv.FromProtoTaskPushConfig(resp)
-}
-
-func (m *mockTransportConverter) FromProtoListTaskPushConfigResponse(resp *a2agopb.ListTaskPushNotificationConfigsResponse) (*a2a.ListTaskPushConfigResponse, error) {
-	if m.fromProtoListTaskPushConfigResponseFn != nil {
-		return m.fromProtoListTaskPushConfigResponseFn(resp)
-	}
-	return pbconv.FromProtoListTaskPushConfigResponse(resp)
-}
-
-func (m *mockTransportConverter) FromProtoAgentCard(resp *a2agopb.AgentCard) (*a2a.AgentCard, error) {
-	if m.fromProtoAgentCardFn != nil {
-		return m.fromProtoAgentCardFn(resp)
-	}
-	return pbconv.FromProtoAgentCard(resp)
-}
-
 // TestTransport_ConverterErrors exercises every error branch in Transport by injecting
-// a mockTransportConverter that returns an error for one specific method at a time.
+// a mockConverter that returns an error for one specific method at a time.
 func TestTransport_ConverterErrors(t *testing.T) {
 	ctx := t.Context()
 	convErr := errors.New("forced converter error")
@@ -1296,7 +1153,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	}
 
 	t.Run("SendMessage/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
 				return nil, convErr
 			},
@@ -1310,7 +1167,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("SendMessage/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoSendMessageResponseFn: func(*a2agopb.SendMessageResponse) (a2a.SendMessageResult, error) {
 				return nil, convErr
 			},
@@ -1324,7 +1181,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("SendStreamingMessage/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
 				return nil, convErr
 			},
@@ -1336,7 +1193,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("SendStreamingMessage/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
 				return nil, convErr
 			},
@@ -1348,7 +1205,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoGetTaskRequestFn: func(*a2a.GetTaskRequest) (*a2agopb.GetTaskRequest, error) {
 				return nil, convErr
 			},
@@ -1360,7 +1217,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
 				return nil, convErr
 			},
@@ -1372,7 +1229,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("ListTasks/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoListTasksRequestFn: func(*a2a.ListTasksRequest) (*a2agopb.ListTasksRequest, error) {
 				return nil, convErr
 			},
@@ -1384,7 +1241,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("ListTasks/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoListTasksResponseFn: func(*a2agopb.ListTasksResponse) (*a2a.ListTasksResponse, error) {
 				return nil, convErr
 			},
@@ -1396,7 +1253,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("CancelTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoCancelTaskRequestFn: func(*a2a.CancelTaskRequest) (*a2agopb.CancelTaskRequest, error) {
 				return nil, convErr
 			},
@@ -1408,7 +1265,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("CancelTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
 				return nil, convErr
 			},
@@ -1420,7 +1277,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("SubscribeToTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoSubscribeToTaskRequestFn: func(*a2a.SubscribeToTaskRequest) (*a2agopb.SubscribeToTaskRequest, error) {
 				return nil, convErr
 			},
@@ -1430,7 +1287,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("SubscribeToTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
 				return nil, convErr
 			},
@@ -1440,7 +1297,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoGetTaskPushConfigRequestFn: func(*a2a.GetTaskPushConfigRequest) (*a2agopb.GetTaskPushNotificationConfigRequest, error) {
 				return nil, convErr
 			},
@@ -1452,7 +1309,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetTaskPushConfig/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
 				return nil, convErr
 			},
@@ -1464,7 +1321,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("CreateTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoCreateTaskPushConfigRequestFn: func(*a2a.CreateTaskPushConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
 				return nil, convErr
 			},
@@ -1478,7 +1335,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("CreateTaskPushConfig/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
 				return nil, convErr
 			},
@@ -1492,7 +1349,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("ListTaskPushConfigs/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoListTaskPushConfigRequestFn: func(*a2a.ListTaskPushConfigRequest) (*a2agopb.ListTaskPushNotificationConfigsRequest, error) {
 				return nil, convErr
 			},
@@ -1504,7 +1361,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("ListTaskPushConfigs/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoListTaskPushConfigResponseFn: func(*a2agopb.ListTaskPushNotificationConfigsResponse) (*a2a.ListTaskPushConfigResponse, error) {
 				return nil, convErr
 			},
@@ -1516,7 +1373,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("DeleteTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoDeleteTaskPushConfigRequestFn: func(*a2a.DeleteTaskPushConfigRequest) (*a2agopb.DeleteTaskPushNotificationConfigRequest, error) {
 				return nil, convErr
 			},
@@ -1528,7 +1385,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetExtendedAgentCard/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
 			toProtoGetExtendedAgentCardRequestFn: func(*a2a.GetExtendedAgentCardRequest) (*a2agopb.GetExtendedAgentCardRequest, error) {
 				return nil, convErr
 			},
@@ -1540,7 +1397,7 @@ func TestTransport_ConverterErrors(t *testing.T) {
 	})
 
 	t.Run("GetExtendedAgentCard/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockTransportConverter{
+		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
 			fromProtoAgentCardFn: func(*a2agopb.AgentCard) (*a2a.AgentCard, error) {
 				return nil, convErr
 			},

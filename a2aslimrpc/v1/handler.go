@@ -20,12 +20,12 @@ import (
 type Handler struct {
 	ourpb.UnimplementedA2AServiceServer
 	handler a2asrv.RequestHandler
-	conv    handlerConverter
+	conv    converter
 }
 
 // NewHandler creates a new SLIM server handler wrapping the given RequestHandler.
 func NewHandler(handler a2asrv.RequestHandler, opts ...HandlerOption) *Handler {
-	h := &Handler{handler: handler, conv: defaultHandlerConverter{}}
+	h := &Handler{handler: handler, conv: defaultConverter{}}
 	for _, o := range opts {
 		o(h)
 	}

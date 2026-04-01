@@ -22,7 +22,7 @@ const SLIMProtocol a2a.TransportProtocol = "slimrpc"
 type Transport struct {
 	client  ourpb.A2AServiceClient
 	channel *slim_bindings.Channel
-	conv    transportConverter
+	conv    converter
 }
 
 // Verify Transport implements a2aclient.Transport at compile time.
@@ -33,7 +33,7 @@ func NewTransport(channel *slim_bindings.Channel, opts ...TransportOption) *Tran
 	t := &Transport{
 		client:  ourpb.NewA2AServiceClient(channel),
 		channel: channel,
-		conv:    defaultTransportConverter{},
+		conv:    defaultConverter{},
 	}
 	for _, o := range opts {
 		o(t)
