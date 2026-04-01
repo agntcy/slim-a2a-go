@@ -11,7 +11,6 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	a2agoClient "github.com/a2aproject/a2a-go/v2/a2aclient"
-	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
 	slim_bindings "github.com/agntcy/slim-bindings-go"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
@@ -24,17 +23,23 @@ const SLIMProtocol a2a.TransportProtocol = "slimrpc"
 type Transport struct {
 	client  ourpb.A2AServiceClient
 	channel *slim_bindings.Channel
+	conv    converter
 }
 
 // Verify Transport implements a2aclient.Transport at compile time.
 var _ a2agoClient.Transport = (*Transport)(nil)
 
 // NewTransport creates a new SLIM v0 transport wrapping the provided channel.
-func NewTransport(channel *slim_bindings.Channel) *Transport {
-	return &Transport{
+func NewTransport(channel *slim_bindings.Channel, opts ...TransportOption) *Transport {
+	t := &Transport{
 		client:  ourpb.NewA2AServiceClient(channel),
 		channel: channel,
+		conv:    defaultConverter{},
 	}
+	for _, o := range opts {
+		o(t)
+	}
+	return t
 }
 
 // WithSLIMRPCTransport returns an [a2aclient.FactoryOption] that registers the
@@ -63,22 +68,25 @@ func WithSLIMRPCTransport(app *slim_bindings.App, connID *uint64) a2agoClient.Fa
 func (t *Transport) SendMessage(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SendMessageRequest,
 ) (a2a.SendMessageResult, error) {
-	pbReq, err := pbconv.ToProtoSendMessageRequest(req)
+	pbReq, err := t.conv.ToProtoSendMessageRequest(req)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Post-conversion SendMessageRequest: %+v\n", pbReq.Configuration)
+
 	resp, err := t.client.SendMessage(ctx, pbReq)
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoSendMessageResponse(resp)
+	return t.conv.FromProtoSendMessageResponse(resp)
 }
 
 func (t *Transport) SendStreamingMessage(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SendMessageRequest,
 ) iter.Seq2[a2a.Event, error] {
 	return func(yield func(a2a.Event, error) bool) {
-		pbReq, err := pbconv.ToProtoSendMessageRequest(req)
+		pbReq, err := t.conv.ToProtoSendMessageRequest(req)
 		if err != nil {
 			yield(nil, err)
 			return
@@ -97,7 +105,7 @@ func (t *Transport) SendStreamingMessage(
 			if resp == nil {
 				return
 			}
-			event, err := pbconv.FromProtoStreamResponse(resp)
+			event, err := t.conv.FromProtoStreamResponse(resp)
 			if err != nil {
 				yield(nil, err)
 				return
@@ -112,7 +120,7 @@ func (t *Transport) SendStreamingMessage(
 func (t *Transport) GetTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.GetTaskRequest,
 ) (*a2a.Task, error) {
-	pbReq, err := pbconv.ToProtoGetTaskRequest(req)
+	pbReq, err := t.conv.ToProtoGetTaskRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +128,13 @@ func (t *Transport) GetTask(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoTask(resp)
+	return t.conv.FromProtoTask(resp)
 }
 
 func (t *Transport) ListTasks(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.ListTasksRequest,
 ) (*a2a.ListTasksResponse, error) {
-	pbReq, err := pbconv.ToProtoListTasksRequest(req)
+	pbReq, err := t.conv.ToProtoListTasksRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -134,13 +142,13 @@ func (t *Transport) ListTasks(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoListTasksResponse(resp)
+	return t.conv.FromProtoListTasksResponse(resp)
 }
 
 func (t *Transport) CancelTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.CancelTaskRequest,
 ) (*a2a.Task, error) {
-	pbReq, err := pbconv.ToProtoCancelTaskRequest(req)
+	pbReq, err := t.conv.ToProtoCancelTaskRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -148,14 +156,14 @@ func (t *Transport) CancelTask(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoTask(resp)
+	return t.conv.FromProtoTask(resp)
 }
 
 func (t *Transport) SubscribeToTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SubscribeToTaskRequest,
 ) iter.Seq2[a2a.Event, error] {
 	return func(yield func(a2a.Event, error) bool) {
-		pbReq, err := pbconv.ToProtoTaskSubscriptionRequest(req)
+		pbReq, err := t.conv.ToProtoTaskSubscriptionRequest(req)
 		if err != nil {
 			yield(nil, err)
 			return
@@ -174,7 +182,7 @@ func (t *Transport) SubscribeToTask(
 			if resp == nil {
 				return
 			}
-			event, err := pbconv.FromProtoStreamResponse(resp)
+			event, err := t.conv.FromProtoStreamResponse(resp)
 			if err != nil {
 				yield(nil, err)
 				return
@@ -189,7 +197,7 @@ func (t *Transport) SubscribeToTask(
 func (t *Transport) GetTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.GetTaskPushConfigRequest,
 ) (*a2a.TaskPushConfig, error) {
-	pbReq, err := pbconv.ToProtoGetTaskPushConfigRequest(req)
+	pbReq, err := t.conv.ToProtoGetTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +205,13 @@ func (t *Transport) GetTaskPushConfig(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoTaskPushConfig(resp)
+	return t.conv.FromProtoTaskPushConfig(resp)
 }
 
 func (t *Transport) ListTaskPushConfigs(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.ListTaskPushConfigRequest,
 ) ([]*a2a.TaskPushConfig, error) {
-	pbReq, err := pbconv.ToProtoListTaskPushConfigRequest(req)
+	pbReq, err := t.conv.ToProtoListTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +220,7 @@ func (t *Transport) ListTaskPushConfigs(
 	if err != nil {
 		return nil, err
 	}
-	result, err := pbconv.FromProtoListTaskPushConfigResponse(resp)
+	result, err := t.conv.FromProtoListTaskPushConfigResponse(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +230,7 @@ func (t *Transport) ListTaskPushConfigs(
 func (t *Transport) CreateTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.CreateTaskPushConfigRequest,
 ) (*a2a.TaskPushConfig, error) {
-	pbReq, err := pbconv.ToProtoCreateTaskPushConfigRequest(req)
+	pbReq, err := t.conv.ToProtoCreateTaskPushConfigRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -230,13 +238,13 @@ func (t *Transport) CreateTaskPushConfig(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoTaskPushConfig(resp)
+	return t.conv.FromProtoTaskPushConfig(resp)
 }
 
 func (t *Transport) DeleteTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.DeleteTaskPushConfigRequest,
 ) error {
-	pbReq, err := pbconv.ToProtoDeleteTaskPushConfigRequest(req)
+	pbReq, err := t.conv.ToProtoDeleteTaskPushConfigRequest(req)
 	if err != nil {
 		return err
 	}
@@ -252,7 +260,7 @@ func (t *Transport) GetExtendedAgentCard(
 	if err != nil {
 		return nil, err
 	}
-	return pbconv.FromProtoAgentCard(resp)
+	return t.conv.FromProtoAgentCard(resp)
 }
 
 func (t *Transport) Destroy() error {
