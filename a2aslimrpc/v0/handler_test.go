@@ -324,6 +324,21 @@ var defaultSubscribeToTaskFn = func(_ context.Context, req *a2a.SubscribeToTaskR
 	}
 }
 
+// mustHandlerStreamError drains the server-sent stream and accepts any error or empty-stream result.
+// If setupErr != nil, the function returns immediately (error at setup is acceptable).
+func mustHandlerStreamError(t *testing.T, setupErr error, recv func() (*a2agopb.StreamResponse, error)) {
+	t.Helper()
+	if setupErr != nil {
+		return
+	}
+	for {
+		resp, err := recv()
+		if err != nil || resp == nil {
+			return
+		}
+	}
+}
+
 func TestHandler_GetTask(t *testing.T) {
 	ctx := t.Context()
 	taskID := a2a.TaskID("test-task")
@@ -406,6 +421,38 @@ func TestHandler_GetTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}, Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{}},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoGetTaskRequestFn: func(*a2agopb.GetTaskRequest) (*a2a.GetTaskRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.GetTask(ctx, &a2agopb.GetTaskRequest{Name: "tasks/task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}, Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{}},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoTaskFn: func(*a2a.Task) (*a2agopb.Task, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.GetTask(ctx, &a2agopb.GetTaskRequest{Name: "tasks/task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_ListTasks(t *testing.T) {
@@ -505,6 +552,38 @@ func TestHandler_ListTasks(t *testing.T) {
 			t.Fatal("ListTasks() expected error from response conversion, got nil")
 		}
 	})
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}, Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{}},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoListTasksRequestFn: func(*a2agopb.ListTasksRequest) (*a2a.ListTasksRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.ListTasks(ctx, &a2agopb.ListTasksRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}, Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{}},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoListTasksResponseFn: func(*a2a.ListTasksResponse) (*a2agopb.ListTasksResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.ListTasks(ctx, &a2agopb.ListTasksRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_CancelTask(t *testing.T) {
@@ -573,6 +652,38 @@ func TestHandler_CancelTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			extractTaskIDFn: func(string) (a2a.TaskID, error) {
+				return "", errors.New("forced converter error")
+			},
+		}))
+		_, err := client.CancelTask(ctx, &a2agopb.CancelTaskRequest{Name: "tasks/task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoTaskFn: func(*a2a.Task) (*a2agopb.Task, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.CancelTask(ctx, &a2agopb.CancelTaskRequest{Name: "tasks/task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_SendMessage(t *testing.T) {
@@ -666,6 +777,42 @@ func TestHandler_SendMessage(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SendMessageFunc: func(_ context.Context, req *a2a.SendMessageRequest) (a2a.SendMessageResult, error) {
+				return &a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoSendMessageRequestFn: func(*a2agopb.SendMessageRequest) (*a2a.SendMessageRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.SendMessage(ctx, &a2agopb.SendMessageRequest{
+			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: []*a2agopb.Part{{Part: &a2agopb.Part_Text{Text: "hello"}}}},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SendMessageFunc: func(_ context.Context, req *a2a.SendMessageRequest) (a2a.SendMessageResult, error) {
+				return &a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoSendMessageResponseFn: func(a2a.SendMessageResult) (*a2agopb.SendMessageResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.SendMessage(ctx, &a2agopb.SendMessageRequest{
+			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: []*a2agopb.Part{{Part: &a2agopb.Part_Text{Text: "hello"}}}},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_SendStreamingMessage(t *testing.T) {
@@ -852,6 +999,42 @@ func TestHandler_SendStreamingMessage(t *testing.T) {
 			t.Fatalf("expected stream to end with error, got response: %v", resp)
 		}
 	})
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SendMessageStreamFunc: func(_ context.Context, req *a2a.SendMessageRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					yield(&a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil)
+				}
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoSendMessageRequestFn: func(*a2agopb.SendMessageRequest) (*a2a.SendMessageRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		stream, err := client.SendStreamingMessage(ctx, &a2agopb.SendMessageRequest{
+			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: []*a2agopb.Part{{Part: &a2agopb.Part_Text{Text: "hello"}}}},
+		})
+		mustHandlerStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SendMessageStreamFunc: func(_ context.Context, req *a2a.SendMessageRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					yield(&a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil)
+				}
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoStreamResponseFn: func(a2a.Event) (*a2agopb.StreamResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		stream, err := client.SendStreamingMessage(ctx, &a2agopb.SendMessageRequest{
+			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: []*a2agopb.Part{{Part: &a2agopb.Part_Text{Text: "hello"}}}},
+		})
+		mustHandlerStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
+	})
 }
 
 func TestHandler_TaskSubscription(t *testing.T) {
@@ -989,6 +1172,44 @@ func TestHandler_TaskSubscription(t *testing.T) {
 			t.Fatalf("expected stream to end with error, got response: %v", resp)
 		}
 	})
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SubscribeToTaskFunc: func(_ context.Context, _ *a2a.SubscribeToTaskRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					yield(&a2a.Task{
+						ID: "task-1", Status: a2a.TaskStatus{State: a2a.TaskStateWorking},
+						Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{},
+					}, nil)
+				}
+			},
+		}, withHandlerConverter(&mockConverter{
+			extractTaskIDFn: func(string) (a2a.TaskID, error) {
+				return "", errors.New("forced converter error")
+			},
+		}))
+		stream, err := client.TaskSubscription(ctx, &a2agopb.TaskSubscriptionRequest{Name: "tasks/task-1"})
+		mustHandlerStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			SubscribeToTaskFunc: func(_ context.Context, _ *a2a.SubscribeToTaskRequest) iter.Seq2[a2a.Event, error] {
+				return func(yield func(a2a.Event, error) bool) {
+					yield(&a2a.Task{
+						ID: "task-1", Status: a2a.TaskStatus{State: a2a.TaskStateWorking},
+						Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{},
+					}, nil)
+				}
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoStreamResponseFn: func(a2a.Event) (*a2agopb.StreamResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		stream, err := client.TaskSubscription(ctx, &a2agopb.TaskSubscriptionRequest{Name: "tasks/task-1"})
+		mustHandlerStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
+	})
 }
 
 func TestHandler_CreateTaskPushNotificationConfig(t *testing.T) {
@@ -1064,6 +1285,50 @@ func TestHandler_CreateTaskPushNotificationConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: make(map[a2a.TaskID]map[string]*a2a.TaskPushConfig),
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoCreateTaskPushConfigRequestFn: func(*a2agopb.CreateTaskPushNotificationConfigRequest) (*a2a.CreateTaskPushConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.CreateTaskPushNotificationConfig(ctx, &a2agopb.CreateTaskPushNotificationConfigRequest{
+			Parent: "tasks/task-1",
+			Config: &a2agopb.TaskPushNotificationConfig{
+				PushNotificationConfig: &a2agopb.PushNotificationConfig{Id: "cfg-new"},
+			},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: make(map[a2a.TaskID]map[string]*a2a.TaskPushConfig),
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoTaskPushConfigFn: func(*a2a.TaskPushConfig) (*a2agopb.TaskPushNotificationConfig, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.CreateTaskPushNotificationConfig(ctx, &a2agopb.CreateTaskPushNotificationConfigRequest{
+			Parent: "tasks/task-1",
+			Config: &a2agopb.TaskPushNotificationConfig{
+				PushNotificationConfig: &a2agopb.PushNotificationConfig{Id: "cfg-new"},
+			},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_GetTaskPushNotificationConfig(t *testing.T) {
@@ -1136,6 +1401,48 @@ func TestHandler_GetTaskPushNotificationConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
+				"task-1": {"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com/hook"}}},
+			},
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoGetTaskPushConfigRequestFn: func(*a2agopb.GetTaskPushNotificationConfigRequest) (*a2a.GetTaskPushConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.GetTaskPushNotificationConfig(ctx, &a2agopb.GetTaskPushNotificationConfigRequest{
+			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
+				"task-1": {"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com/hook"}}},
+			},
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoTaskPushConfigFn: func(*a2a.TaskPushConfig) (*a2agopb.TaskPushNotificationConfig, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.GetTaskPushNotificationConfig(ctx, &a2agopb.GetTaskPushNotificationConfigRequest{
+			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_ListTaskPushNotificationConfig(t *testing.T) {
@@ -1214,6 +1521,48 @@ func TestHandler_ListTaskPushNotificationConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
+				"task-1": {"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com/hook"}}},
+			},
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoListTaskPushConfigRequestFn: func(*a2agopb.ListTaskPushNotificationConfigRequest) (*a2a.ListTaskPushConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.ListTaskPushNotificationConfig(ctx, &a2agopb.ListTaskPushNotificationConfigRequest{
+			Parent: "tasks/task-1",
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
+				"task-1": {"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com/hook"}}},
+			},
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoListTaskPushConfigResponseFn: func(*a2a.ListTaskPushConfigResponse) (*a2agopb.ListTaskPushNotificationConfigResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.ListTaskPushNotificationConfig(ctx, &a2agopb.ListTaskPushNotificationConfigRequest{
+			Parent: "tasks/task-1",
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_DeleteTaskPushNotificationConfig(t *testing.T) {
@@ -1287,6 +1636,27 @@ func TestHandler_DeleteTaskPushNotificationConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request decode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
+				"task-1": {"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1"}}},
+			},
+			tasks: map[a2a.TaskID]*a2a.Task{
+				"task-1": {ID: "task-1", ContextID: "ctx-1"},
+			},
+		}, withHandlerConverter(&mockConverter{
+			fromProtoDeleteTaskPushConfigRequestFn: func(*a2agopb.DeleteTaskPushNotificationConfigRequest) (*a2a.DeleteTaskPushConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.DeleteTaskPushNotificationConfig(ctx, &a2agopb.DeleteTaskPushNotificationConfigRequest{
+			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestHandler_GetAgentCard(t *testing.T) {
@@ -1362,6 +1732,22 @@ func TestHandler_GetAgentCard(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("response encode error", func(t *testing.T) {
+		client := startTestServer(t, &mockRequestHandler{
+			getExtendedAgentCardFunc: func(_ context.Context, _ *a2a.GetExtendedAgentCardRequest) (*a2a.AgentCard, error) {
+				return &a2a.AgentCard{Name: "test"}, nil
+			},
+		}, withHandlerConverter(&mockConverter{
+			toProtoAgentCardFn: func(*a2a.AgentCard) (*a2agopb.AgentCard, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := client.GetAgentCard(ctx, &a2agopb.GetAgentCardRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 // mockConverter implements converter with configurable function fields.
@@ -1621,322 +2007,3 @@ func (m *mockConverter) ToProtoAgentCard(card *a2a.AgentCard) (*a2agopb.AgentCar
 	return pbconv.ToProtoAgentCard(card)
 }
 
-// TestHandler_ConverterErrors exercises every error branch in Handler by injecting
-// a mockConverter that returns an error for one specific method at a time.
-func TestHandler_ConverterErrors(t *testing.T) {
-	ctx := t.Context()
-	convErr := errors.New("forced converter error")
-
-	makeBaseHandler := func() *mockRequestHandler {
-		return &mockRequestHandler{
-			tasks: map[a2a.TaskID]*a2a.Task{
-				"task-1": {
-					ID:        "task-1",
-					ContextID: "ctx-1",
-					Status:    a2a.TaskStatus{State: a2a.TaskStateSubmitted},
-					Artifacts: []*a2a.Artifact{},
-					History:   []*a2a.Message{},
-				},
-			},
-			pushConfigs: map[a2a.TaskID]map[string]*a2a.TaskPushConfig{
-				"task-1": {
-					"cfg-1": {TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com/hook"}},
-				},
-			},
-			SendMessageFunc: func(_ context.Context, req *a2a.SendMessageRequest) (a2a.SendMessageResult, error) {
-				return &a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil
-			},
-			SendMessageStreamFunc: func(_ context.Context, req *a2a.SendMessageRequest) iter.Seq2[a2a.Event, error] {
-				return func(yield func(a2a.Event, error) bool) {
-					yield(&a2a.Message{ID: "resp", Role: a2a.MessageRoleAgent, Parts: req.Message.Parts}, nil)
-				}
-			},
-			SubscribeToTaskFunc: func(_ context.Context, _ *a2a.SubscribeToTaskRequest) iter.Seq2[a2a.Event, error] {
-				return func(yield func(a2a.Event, error) bool) {
-					yield(&a2a.Task{
-						ID: "task-1", Status: a2a.TaskStatus{State: a2a.TaskStateWorking},
-						Artifacts: []*a2a.Artifact{}, History: []*a2a.Message{},
-					}, nil)
-				}
-			},
-			getExtendedAgentCardFunc: func(_ context.Context, _ *a2a.GetExtendedAgentCardRequest) (*a2a.AgentCard, error) {
-				return &a2a.AgentCard{Name: "test"}, nil
-			},
-		}
-	}
-
-	parts := []*a2agopb.Part{{Part: &a2agopb.Part_Text{Text: "hello"}}}
-
-	mustStreamError := func(t *testing.T, setupErr error, recv func() (*a2agopb.StreamResponse, error)) {
-		t.Helper()
-		if setupErr != nil {
-			return
-		}
-		for {
-			resp, err := recv()
-			if err != nil || resp == nil {
-				return
-			}
-		}
-	}
-
-	t.Run("SendMessage/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoSendMessageRequestFn: func(*a2agopb.SendMessageRequest) (*a2a.SendMessageRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.SendMessage(ctx, &a2agopb.SendMessageRequest{
-			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: parts},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("SendMessage/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoSendMessageResponseFn: func(a2a.SendMessageResult) (*a2agopb.SendMessageResponse, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.SendMessage(ctx, &a2agopb.SendMessageRequest{
-			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: parts},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("SendStreamingMessage/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoSendMessageRequestFn: func(*a2agopb.SendMessageRequest) (*a2a.SendMessageRequest, error) {
-				return nil, convErr
-			},
-		}))
-		stream, err := client.SendStreamingMessage(ctx, &a2agopb.SendMessageRequest{
-			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: parts},
-		})
-		mustStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
-	})
-
-	t.Run("SendStreamingMessage/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoStreamResponseFn: func(a2a.Event) (*a2agopb.StreamResponse, error) {
-				return nil, convErr
-			},
-		}))
-		stream, err := client.SendStreamingMessage(ctx, &a2agopb.SendMessageRequest{
-			Request: &a2agopb.Message{MessageId: "m1", Role: a2agopb.Role_ROLE_USER, Parts: parts},
-		})
-		mustStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
-	})
-
-	t.Run("GetTask/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoGetTaskRequestFn: func(*a2agopb.GetTaskRequest) (*a2a.GetTaskRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.GetTask(ctx, &a2agopb.GetTaskRequest{Name: "tasks/task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetTask/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoTaskFn: func(*a2a.Task) (*a2agopb.Task, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.GetTask(ctx, &a2agopb.GetTaskRequest{Name: "tasks/task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTasks/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoListTasksRequestFn: func(*a2agopb.ListTasksRequest) (*a2a.ListTasksRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.ListTasks(ctx, &a2agopb.ListTasksRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTasks/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoListTasksResponseFn: func(*a2a.ListTasksResponse) (*a2agopb.ListTasksResponse, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.ListTasks(ctx, &a2agopb.ListTasksRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CancelTask/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			extractTaskIDFn: func(string) (a2a.TaskID, error) {
-				return "", convErr
-			},
-		}))
-		_, err := client.CancelTask(ctx, &a2agopb.CancelTaskRequest{Name: "tasks/task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CancelTask/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoTaskFn: func(*a2a.Task) (*a2agopb.Task, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.CancelTask(ctx, &a2agopb.CancelTaskRequest{Name: "tasks/task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("TaskSubscription/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			extractTaskIDFn: func(string) (a2a.TaskID, error) {
-				return "", convErr
-			},
-		}))
-		stream, err := client.TaskSubscription(ctx, &a2agopb.TaskSubscriptionRequest{Name: "tasks/task-1"})
-		mustStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
-	})
-
-	t.Run("TaskSubscription/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoStreamResponseFn: func(a2a.Event) (*a2agopb.StreamResponse, error) {
-				return nil, convErr
-			},
-		}))
-		stream, err := client.TaskSubscription(ctx, &a2agopb.TaskSubscriptionRequest{Name: "tasks/task-1"})
-		mustStreamError(t, err, func() (*a2agopb.StreamResponse, error) { return stream.Recv() })
-	})
-
-	t.Run("CreateTaskPushNotificationConfig/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoCreateTaskPushConfigRequestFn: func(*a2agopb.CreateTaskPushNotificationConfigRequest) (*a2a.CreateTaskPushConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.CreateTaskPushNotificationConfig(ctx, &a2agopb.CreateTaskPushNotificationConfigRequest{
-			Parent: "tasks/task-1",
-			Config: &a2agopb.TaskPushNotificationConfig{
-				PushNotificationConfig: &a2agopb.PushNotificationConfig{Id: "cfg-new"},
-			},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CreateTaskPushNotificationConfig/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoTaskPushConfigFn: func(*a2a.TaskPushConfig) (*a2agopb.TaskPushNotificationConfig, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.CreateTaskPushNotificationConfig(ctx, &a2agopb.CreateTaskPushNotificationConfigRequest{
-			Parent: "tasks/task-1",
-			Config: &a2agopb.TaskPushNotificationConfig{
-				PushNotificationConfig: &a2agopb.PushNotificationConfig{Id: "cfg-new"},
-			},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetTaskPushNotificationConfig/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoGetTaskPushConfigRequestFn: func(*a2agopb.GetTaskPushNotificationConfigRequest) (*a2a.GetTaskPushConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.GetTaskPushNotificationConfig(ctx, &a2agopb.GetTaskPushNotificationConfigRequest{
-			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetTaskPushNotificationConfig/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoTaskPushConfigFn: func(*a2a.TaskPushConfig) (*a2agopb.TaskPushNotificationConfig, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.GetTaskPushNotificationConfig(ctx, &a2agopb.GetTaskPushNotificationConfigRequest{
-			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTaskPushNotificationConfig/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoListTaskPushConfigRequestFn: func(*a2agopb.ListTaskPushNotificationConfigRequest) (*a2a.ListTaskPushConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.ListTaskPushNotificationConfig(ctx, &a2agopb.ListTaskPushNotificationConfigRequest{
-			Parent: "tasks/task-1",
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTaskPushNotificationConfig/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoListTaskPushConfigResponseFn: func(*a2a.ListTaskPushConfigResponse) (*a2agopb.ListTaskPushNotificationConfigResponse, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.ListTaskPushNotificationConfig(ctx, &a2agopb.ListTaskPushNotificationConfigRequest{
-			Parent: "tasks/task-1",
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("DeleteTaskPushNotificationConfig/request decode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			fromProtoDeleteTaskPushConfigRequestFn: func(*a2agopb.DeleteTaskPushNotificationConfigRequest) (*a2a.DeleteTaskPushConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.DeleteTaskPushNotificationConfig(ctx, &a2agopb.DeleteTaskPushNotificationConfigRequest{
-			Name: "tasks/task-1/pushNotificationConfigs/cfg-1",
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetAgentCard/response encode error", func(t *testing.T) {
-		client := startTestServer(t, makeBaseHandler(), withHandlerConverter(&mockConverter{
-			toProtoAgentCardFn: func(*a2a.AgentCard) (*a2agopb.AgentCard, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := client.GetAgentCard(ctx, &a2agopb.GetAgentCardRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-}

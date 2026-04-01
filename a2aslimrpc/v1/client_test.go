@@ -177,6 +177,16 @@ func collectStreamEvents(seq iter.Seq2[a2a.Event, error]) ([]a2a.Event, error) {
 	return events, streamErr
 }
 
+// mustTransportStreamError drains the iterator and accepts any error or empty-stream result.
+func mustTransportStreamError(t *testing.T, seq iter.Seq2[a2a.Event, error]) {
+	t.Helper()
+	for _, err := range seq {
+		if err != nil {
+			return
+		}
+	}
+}
+
 func TestTransport_SendMessage(t *testing.T) {
 	ctx := t.Context()
 	taskID := a2a.TaskID("transport-task-1")
@@ -266,6 +276,42 @@ func TestTransport_SendMessage(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.SendMessage(ctx, nil, &a2a.SendMessageRequest{
+			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			sendMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest) (*a2agopb.SendMessageResponse, error) {
+				return &a2agopb.SendMessageResponse{
+					Payload: &a2agopb.SendMessageResponse_Message{
+						Message: &a2agopb.Message{MessageId: "resp", Role: a2agopb.Role_ROLE_AGENT},
+					},
+				}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoSendMessageResponseFn: func(*a2agopb.SendMessageResponse) (a2a.SendMessageResult, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.SendMessage(ctx, nil, &a2a.SendMessageRequest{
+			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_SendStreamingMessage(t *testing.T) {
@@ -420,6 +466,38 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 			t.Fatal("consumer stops early: expected at least 1 event before break")
 		}
 	})
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		seq := transport.SendStreamingMessage(ctx, nil, &a2a.SendMessageRequest{
+			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
+		})
+		mustTransportStreamError(t, seq)
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			sendStreamingMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+				return stream.Send(&a2agopb.StreamResponse{
+					Payload: &a2agopb.StreamResponse_Message{
+						Message: &a2agopb.Message{MessageId: "resp", Role: a2agopb.Role_ROLE_AGENT},
+					},
+				})
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		seq := transport.SendStreamingMessage(ctx, nil, &a2a.SendMessageRequest{
+			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
+		})
+		mustTransportStreamError(t, seq)
+	})
 }
 
 func TestTransport_GetTask(t *testing.T) {
@@ -493,6 +571,34 @@ func TestTransport_GetTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoGetTaskRequestFn: func(*a2a.GetTaskRequest) (*a2agopb.GetTaskRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetTask(ctx, nil, &a2a.GetTaskRequest{ID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			getTaskFn: func(_ context.Context, req *a2agopb.GetTaskRequest) (*a2agopb.Task, error) {
+				return &a2agopb.Task{Id: req.GetId(), ContextId: "ctx", Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_SUBMITTED}}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetTask(ctx, nil, &a2a.GetTaskRequest{ID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_ListTasks(t *testing.T) {
@@ -568,6 +674,34 @@ func TestTransport_ListTasks(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoListTasksRequestFn: func(*a2a.ListTasksRequest) (*a2agopb.ListTasksRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.ListTasks(ctx, nil, &a2a.ListTasksRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			listTasksFn: func(_ context.Context, _ *a2agopb.ListTasksRequest) (*a2agopb.ListTasksResponse, error) {
+				return &a2agopb.ListTasksResponse{}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoListTasksResponseFn: func(*a2agopb.ListTasksResponse) (*a2a.ListTasksResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.ListTasks(ctx, nil, &a2a.ListTasksRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_CancelTask(t *testing.T) {
@@ -629,6 +763,34 @@ func TestTransport_CancelTask(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoCancelTaskRequestFn: func(*a2a.CancelTaskRequest) (*a2agopb.CancelTaskRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.CancelTask(ctx, nil, &a2a.CancelTaskRequest{ID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			cancelTaskFn: func(_ context.Context, req *a2agopb.CancelTaskRequest) (*a2agopb.Task, error) {
+				return &a2agopb.Task{Id: req.GetId(), Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_CANCELED}}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.CancelTask(ctx, nil, &a2a.CancelTaskRequest{ID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_SubscribeToTask(t *testing.T) {
@@ -737,6 +899,34 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 			t.Fatal("consumer stops early: expected at least 1 event before break")
 		}
 	})
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoSubscribeToTaskRequestFn: func(*a2a.SubscribeToTaskRequest) (*a2agopb.SubscribeToTaskRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		seq := transport.SubscribeToTask(ctx, nil, &a2a.SubscribeToTaskRequest{ID: "task-1"})
+		mustTransportStreamError(t, seq)
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			subscribeToTaskFn: func(_ context.Context, _ *a2agopb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+				return stream.Send(&a2agopb.StreamResponse{
+					Payload: &a2agopb.StreamResponse_Task{
+						Task: &a2agopb.Task{Id: "task-1", Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_WORKING}},
+					},
+				})
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		seq := transport.SubscribeToTask(ctx, nil, &a2a.SubscribeToTaskRequest{ID: "task-1"})
+		mustTransportStreamError(t, seq)
+	})
 }
 
 func TestTransport_CreateTaskPushConfig(t *testing.T) {
@@ -801,6 +991,38 @@ func TestTransport_CreateTaskPushConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoCreateTaskPushConfigRequestFn: func(*a2a.CreateTaskPushConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.CreateTaskPushConfig(ctx, nil, &a2a.CreateTaskPushConfigRequest{
+			TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com"},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			createTaskPushNotificationConfigFn: func(_ context.Context, req *a2agopb.TaskPushNotificationConfig) (*a2agopb.TaskPushNotificationConfig, error) {
+				return req, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.CreateTaskPushConfig(ctx, nil, &a2a.CreateTaskPushConfigRequest{
+			TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com"},
+		})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_GetTaskPushConfig(t *testing.T) {
@@ -860,6 +1082,34 @@ func TestTransport_GetTaskPushConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoGetTaskPushConfigRequestFn: func(*a2a.GetTaskPushConfigRequest) (*a2agopb.GetTaskPushNotificationConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetTaskPushConfig(ctx, nil, &a2a.GetTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			getTaskPushNotificationConfigFn: func(_ context.Context, req *a2agopb.GetTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
+				return &a2agopb.TaskPushNotificationConfig{TaskId: req.GetTaskId(), Id: req.GetId()}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetTaskPushConfig(ctx, nil, &a2a.GetTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_ListTaskPushConfigs(t *testing.T) {
@@ -935,6 +1185,34 @@ func TestTransport_ListTaskPushConfigs(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoListTaskPushConfigRequestFn: func(*a2a.ListTaskPushConfigRequest) (*a2agopb.ListTaskPushNotificationConfigsRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.ListTaskPushConfigs(ctx, nil, &a2a.ListTaskPushConfigRequest{TaskID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			listTaskPushNotificationConfigsFn: func(_ context.Context, _ *a2agopb.ListTaskPushNotificationConfigsRequest) (*a2agopb.ListTaskPushNotificationConfigsResponse, error) {
+				return &a2agopb.ListTaskPushNotificationConfigsResponse{}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoListTaskPushConfigResponseFn: func(*a2agopb.ListTaskPushNotificationConfigsResponse) (*a2a.ListTaskPushConfigResponse, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.ListTaskPushConfigs(ctx, nil, &a2a.ListTaskPushConfigRequest{TaskID: "task-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_DeleteTaskPushConfig(t *testing.T) {
@@ -982,6 +1260,18 @@ func TestTransport_DeleteTaskPushConfig(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoDeleteTaskPushConfigRequestFn: func(*a2a.DeleteTaskPushConfigRequest) (*a2agopb.DeleteTaskPushNotificationConfigRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		err := transport.DeleteTaskPushConfig(ctx, nil, &a2a.DeleteTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_GetExtendedAgentCard(t *testing.T) {
@@ -1067,6 +1357,40 @@ func TestTransport_GetExtendedAgentCard(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("request encode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
+			toProtoGetExtendedAgentCardRequestFn: func(*a2a.GetExtendedAgentCardRequest) (*a2agopb.GetExtendedAgentCardRequest, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetExtendedAgentCard(ctx, nil, &a2a.GetExtendedAgentCardRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("response decode error", func(t *testing.T) {
+		transport := startTestTransport(t, &mockProtoServer{
+			getExtendedAgentCardFn: func(_ context.Context, _ *a2agopb.GetExtendedAgentCardRequest) (*a2agopb.AgentCard, error) {
+				return &a2agopb.AgentCard{
+					Name: "test", Version: "1.0.0",
+					Capabilities:      &a2agopb.AgentCapabilities{},
+					DefaultInputModes: []string{"text"}, DefaultOutputModes: []string{"text"},
+					SupportedInterfaces: []*a2agopb.AgentInterface{{Url: "agntcy/test/agent", ProtocolVersion: "1.0", ProtocolBinding: "slimrpc"}},
+					Skills:              []*a2agopb.AgentSkill{{Id: "s1", Name: "S1"}},
+				}, nil
+			},
+		}, withTransportConverter(&mockConverter{
+			fromProtoAgentCardFn: func(*a2agopb.AgentCard) (*a2a.AgentCard, error) {
+				return nil, errors.New("forced converter error")
+			},
+		}))
+		_, err := transport.GetExtendedAgentCard(ctx, nil, &a2a.GetExtendedAgentCardRequest{})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
 }
 
 func TestTransport_Destroy(t *testing.T) {
@@ -1081,330 +1405,4 @@ func TestTransport_Destroy(t *testing.T) {
 	if err := transport.Destroy(); err != nil {
 		t.Fatalf("Destroy() returned unexpected error: %v", err)
 	}
-}
-
-// TestTransport_ConverterErrors exercises every error branch in Transport by injecting
-// a mockConverter that returns an error for one specific method at a time.
-func TestTransport_ConverterErrors(t *testing.T) {
-	ctx := t.Context()
-	convErr := errors.New("forced converter error")
-
-	// minimalSrv is a mock proto server that returns minimal valid responses
-	// for use in "response decode error" sub-cases.
-	minimalSrv := &mockProtoServer{
-		sendMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest) (*a2agopb.SendMessageResponse, error) {
-			return &a2agopb.SendMessageResponse{
-				Payload: &a2agopb.SendMessageResponse_Message{
-					Message: &a2agopb.Message{MessageId: "resp", Role: a2agopb.Role_ROLE_AGENT},
-				},
-			}, nil
-		},
-		getTaskFn: func(_ context.Context, req *a2agopb.GetTaskRequest) (*a2agopb.Task, error) {
-			return &a2agopb.Task{Id: req.GetId(), ContextId: "ctx", Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_SUBMITTED}}, nil
-		},
-		listTasksFn: func(_ context.Context, _ *a2agopb.ListTasksRequest) (*a2agopb.ListTasksResponse, error) {
-			return &a2agopb.ListTasksResponse{}, nil
-		},
-		cancelTaskFn: func(_ context.Context, req *a2agopb.CancelTaskRequest) (*a2agopb.Task, error) {
-			return &a2agopb.Task{Id: req.GetId(), Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_CANCELED}}, nil
-		},
-		sendStreamingMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
-			return stream.Send(&a2agopb.StreamResponse{
-				Payload: &a2agopb.StreamResponse_Message{
-					Message: &a2agopb.Message{MessageId: "resp", Role: a2agopb.Role_ROLE_AGENT},
-				},
-			})
-		},
-		subscribeToTaskFn: func(_ context.Context, _ *a2agopb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
-			return stream.Send(&a2agopb.StreamResponse{
-				Payload: &a2agopb.StreamResponse_Task{
-					Task: &a2agopb.Task{Id: "task-1", Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_WORKING}},
-				},
-			})
-		},
-		createTaskPushNotificationConfigFn: func(_ context.Context, req *a2agopb.TaskPushNotificationConfig) (*a2agopb.TaskPushNotificationConfig, error) {
-			return req, nil
-		},
-		getTaskPushNotificationConfigFn: func(_ context.Context, req *a2agopb.GetTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
-			return &a2agopb.TaskPushNotificationConfig{TaskId: req.GetTaskId(), Id: req.GetId()}, nil
-		},
-		listTaskPushNotificationConfigsFn: func(_ context.Context, _ *a2agopb.ListTaskPushNotificationConfigsRequest) (*a2agopb.ListTaskPushNotificationConfigsResponse, error) {
-			return &a2agopb.ListTaskPushNotificationConfigsResponse{}, nil
-		},
-		getExtendedAgentCardFn: func(_ context.Context, _ *a2agopb.GetExtendedAgentCardRequest) (*a2agopb.AgentCard, error) {
-			return &a2agopb.AgentCard{
-				Name: "test", Version: "1.0.0",
-				Capabilities:      &a2agopb.AgentCapabilities{},
-				DefaultInputModes: []string{"text"}, DefaultOutputModes: []string{"text"},
-				SupportedInterfaces: []*a2agopb.AgentInterface{{Url: "agntcy/test/agent", ProtocolVersion: "1.0", ProtocolBinding: "slimrpc"}},
-				Skills:              []*a2agopb.AgentSkill{{Id: "s1", Name: "S1"}},
-			}, nil
-		},
-	}
-
-	// mustStreamError collects from the iterator and accepts any error or empty stream.
-	mustStreamError := func(t *testing.T, seq iter.Seq2[a2a.Event, error]) {
-		t.Helper()
-		for _, err := range seq {
-			if err != nil {
-				return
-			}
-		}
-	}
-
-	t.Run("SendMessage/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.SendMessage(ctx, nil, &a2a.SendMessageRequest{
-			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("SendMessage/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoSendMessageResponseFn: func(*a2agopb.SendMessageResponse) (a2a.SendMessageResult, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.SendMessage(ctx, nil, &a2a.SendMessageRequest{
-			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("SendStreamingMessage/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoSendMessageRequestFn: func(*a2a.SendMessageRequest) (*a2agopb.SendMessageRequest, error) {
-				return nil, convErr
-			},
-		}))
-		seq := transport.SendStreamingMessage(ctx, nil, &a2a.SendMessageRequest{
-			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
-		})
-		mustStreamError(t, seq)
-	})
-
-	t.Run("SendStreamingMessage/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
-				return nil, convErr
-			},
-		}))
-		seq := transport.SendStreamingMessage(ctx, nil, &a2a.SendMessageRequest{
-			Message: &a2a.Message{ID: "m1", Role: a2a.MessageRoleUser, Parts: a2a.ContentParts{a2a.NewTextPart("hi")}},
-		})
-		mustStreamError(t, seq)
-	})
-
-	t.Run("GetTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoGetTaskRequestFn: func(*a2a.GetTaskRequest) (*a2agopb.GetTaskRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetTask(ctx, nil, &a2a.GetTaskRequest{ID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetTask(ctx, nil, &a2a.GetTaskRequest{ID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTasks/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoListTasksRequestFn: func(*a2a.ListTasksRequest) (*a2agopb.ListTasksRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.ListTasks(ctx, nil, &a2a.ListTasksRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTasks/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoListTasksResponseFn: func(*a2agopb.ListTasksResponse) (*a2a.ListTasksResponse, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.ListTasks(ctx, nil, &a2a.ListTasksRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CancelTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoCancelTaskRequestFn: func(*a2a.CancelTaskRequest) (*a2agopb.CancelTaskRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.CancelTask(ctx, nil, &a2a.CancelTaskRequest{ID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CancelTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoTaskFn: func(*a2agopb.Task) (*a2a.Task, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.CancelTask(ctx, nil, &a2a.CancelTaskRequest{ID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("SubscribeToTask/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoSubscribeToTaskRequestFn: func(*a2a.SubscribeToTaskRequest) (*a2agopb.SubscribeToTaskRequest, error) {
-				return nil, convErr
-			},
-		}))
-		seq := transport.SubscribeToTask(ctx, nil, &a2a.SubscribeToTaskRequest{ID: "task-1"})
-		mustStreamError(t, seq)
-	})
-
-	t.Run("SubscribeToTask/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoStreamResponseFn: func(*a2agopb.StreamResponse) (a2a.Event, error) {
-				return nil, convErr
-			},
-		}))
-		seq := transport.SubscribeToTask(ctx, nil, &a2a.SubscribeToTaskRequest{ID: "task-1"})
-		mustStreamError(t, seq)
-	})
-
-	t.Run("GetTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoGetTaskPushConfigRequestFn: func(*a2a.GetTaskPushConfigRequest) (*a2agopb.GetTaskPushNotificationConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetTaskPushConfig(ctx, nil, &a2a.GetTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetTaskPushConfig/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetTaskPushConfig(ctx, nil, &a2a.GetTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CreateTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoCreateTaskPushConfigRequestFn: func(*a2a.CreateTaskPushConfigRequest) (*a2agopb.TaskPushNotificationConfig, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.CreateTaskPushConfig(ctx, nil, &a2a.CreateTaskPushConfigRequest{
-			TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com"},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("CreateTaskPushConfig/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoTaskPushConfigFn: func(*a2agopb.TaskPushNotificationConfig) (*a2a.TaskPushConfig, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.CreateTaskPushConfig(ctx, nil, &a2a.CreateTaskPushConfigRequest{
-			TaskID: "task-1", Config: a2a.PushConfig{ID: "cfg-1", URL: "https://example.com"},
-		})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTaskPushConfigs/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoListTaskPushConfigRequestFn: func(*a2a.ListTaskPushConfigRequest) (*a2agopb.ListTaskPushNotificationConfigsRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.ListTaskPushConfigs(ctx, nil, &a2a.ListTaskPushConfigRequest{TaskID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("ListTaskPushConfigs/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoListTaskPushConfigResponseFn: func(*a2agopb.ListTaskPushNotificationConfigsResponse) (*a2a.ListTaskPushConfigResponse, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.ListTaskPushConfigs(ctx, nil, &a2a.ListTaskPushConfigRequest{TaskID: "task-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("DeleteTaskPushConfig/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoDeleteTaskPushConfigRequestFn: func(*a2a.DeleteTaskPushConfigRequest) (*a2agopb.DeleteTaskPushNotificationConfigRequest, error) {
-				return nil, convErr
-			},
-		}))
-		err := transport.DeleteTaskPushConfig(ctx, nil, &a2a.DeleteTaskPushConfigRequest{TaskID: "task-1", ID: "cfg-1"})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetExtendedAgentCard/request encode error", func(t *testing.T) {
-		transport := startTestTransport(t, &mockProtoServer{}, withTransportConverter(&mockConverter{
-			toProtoGetExtendedAgentCardRequestFn: func(*a2a.GetExtendedAgentCardRequest) (*a2agopb.GetExtendedAgentCardRequest, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetExtendedAgentCard(ctx, nil, &a2a.GetExtendedAgentCardRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
-
-	t.Run("GetExtendedAgentCard/response decode error", func(t *testing.T) {
-		transport := startTestTransport(t, minimalSrv, withTransportConverter(&mockConverter{
-			fromProtoAgentCardFn: func(*a2agopb.AgentCard) (*a2a.AgentCard, error) {
-				return nil, convErr
-			},
-		}))
-		_, err := transport.GetExtendedAgentCard(ctx, nil, &a2a.GetExtendedAgentCardRequest{})
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-	})
 }
