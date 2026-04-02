@@ -5,7 +5,6 @@ package a2aslimrpc
 
 import (
 	"context"
-	"fmt"
 
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
@@ -42,15 +41,10 @@ func (h *Handler) RegisterWith(s *slim_bindings.Server) {
 func (h *Handler) SendMessage(
 	ctx context.Context, req *a2agopb.SendMessageRequest,
 ) (*a2agopb.SendMessageResponse, error) {
-
-	fmt.Printf("Received SendMessage request: %#v\n", req.Configuration)
-
 	params, err := h.conv.FromProtoSendMessageRequest(req)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("Converted SendMessage params: %#v\n", params.Config)
 
 	result, err := h.handler.SendMessage(ctx, params)
 	if err != nil {

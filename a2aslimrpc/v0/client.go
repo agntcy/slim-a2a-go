@@ -73,8 +73,6 @@ func (t *Transport) SendMessage(
 		return nil, err
 	}
 
-	fmt.Printf("Post-conversion SendMessageRequest: %+v\n", pbReq.Configuration)
-
 	resp, err := t.client.SendMessage(ctx, pbReq)
 	if err != nil {
 		return nil, err

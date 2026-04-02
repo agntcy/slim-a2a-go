@@ -2006,4 +2006,3 @@ func (m *mockConverter) ToProtoAgentCard(card *a2a.AgentCard) (*a2agopb.AgentCar
 	}
 	return pbconv.ToProtoAgentCard(card)
 }
-

@@ -1404,4 +1404,3 @@ func TestTransport_Destroy(t *testing.T) {
 		t.Fatalf("Destroy() returned unexpected error: %v", err)
 	}
 }
-
