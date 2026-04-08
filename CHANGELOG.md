@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/agntcy/slim-a2a-go/compare/v0.1.1...v0.2.0) (2026-04-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrade a2a-go to v2 and add dual-version SLIM RPC support (v0.3.x + v1.0.0)
+
+### Features
+
+* upgrade a2a-go to v2 and add dual-version SLIM RPC support (v0.3.x + v1.0.0) ([972ee82](https://github.com/agntcy/slim-a2a-go/commit/972ee82fb88002ac8b288874f9a14718296eb767))
+
 ## [0.1.1](https://github.com/agntcy/slim-a2a-go/compare/v0.1.0...v0.1.1) (2026-03-10)
 
 
