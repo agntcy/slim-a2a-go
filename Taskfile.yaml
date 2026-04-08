@@ -20,13 +20,22 @@ tasks:
     cmds:
       - goimports -w .
 
+  setup:
+    desc: Run the slim-bindings-go one-time setup (installs native libraries)
+    cmds:
+      - go run github.com/agntcy/slim-bindings-go/cmd/slim-bindings-setup
+
   test:
     desc: Run all tests
+    deps:
+      - setup
     cmds:
       - go test -v ./...
 
   test-coverage:
     desc: Run tests with coverage report
+    deps:
+      - setup
     cmds:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out -o coverage.html
