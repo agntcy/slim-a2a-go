@@ -65,6 +65,7 @@ func WithSLIMRPCTransport(app *slim_bindings.App, connID *uint64) a2agoClient.Fa
 	)
 }
 
+// SendMessage implements [a2agoClient.Transport] — sends a message and returns a non-streaming response.
 func (t *Transport) SendMessage(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SendMessageRequest,
 ) (a2a.SendMessageResult, error) {
@@ -80,6 +81,7 @@ func (t *Transport) SendMessage(
 	return t.conv.FromProtoSendMessageResponse(resp)
 }
 
+// SendStreamingMessage implements [a2agoClient.Transport] — sends a message and returns a streaming event iterator.
 func (t *Transport) SendStreamingMessage(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SendMessageRequest,
 ) iter.Seq2[a2a.Event, error] {
@@ -115,6 +117,7 @@ func (t *Transport) SendStreamingMessage(
 	}
 }
 
+// GetTask implements [a2agoClient.Transport] — retrieves a task by ID.
 func (t *Transport) GetTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.GetTaskRequest,
 ) (*a2a.Task, error) {
@@ -129,6 +132,7 @@ func (t *Transport) GetTask(
 	return t.conv.FromProtoTask(resp)
 }
 
+// ListTasks implements [a2agoClient.Transport] — lists tasks matching the request filters.
 func (t *Transport) ListTasks(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.ListTasksRequest,
 ) (*a2a.ListTasksResponse, error) {
@@ -143,6 +147,7 @@ func (t *Transport) ListTasks(
 	return t.conv.FromProtoListTasksResponse(resp)
 }
 
+// CancelTask implements [a2agoClient.Transport] — requests cancellation of a task.
 func (t *Transport) CancelTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.CancelTaskRequest,
 ) (*a2a.Task, error) {
@@ -157,6 +162,7 @@ func (t *Transport) CancelTask(
 	return t.conv.FromProtoTask(resp)
 }
 
+// SubscribeToTask implements [a2agoClient.Transport] — (re)subscribes to a task's event stream.
 func (t *Transport) SubscribeToTask(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.SubscribeToTaskRequest,
 ) iter.Seq2[a2a.Event, error] {
@@ -192,6 +198,7 @@ func (t *Transport) SubscribeToTask(
 	}
 }
 
+// GetTaskPushConfig implements [a2agoClient.Transport] — retrieves a push notification config.
 func (t *Transport) GetTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.GetTaskPushConfigRequest,
 ) (*a2a.TaskPushConfig, error) {
@@ -206,6 +213,7 @@ func (t *Transport) GetTaskPushConfig(
 	return t.conv.FromProtoTaskPushConfig(resp)
 }
 
+// ListTaskPushConfigs implements [a2agoClient.Transport] — lists push notification configs for a task.
 func (t *Transport) ListTaskPushConfigs(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.ListTaskPushConfigRequest,
 ) ([]*a2a.TaskPushConfig, error) {
@@ -225,6 +233,7 @@ func (t *Transport) ListTaskPushConfigs(
 	return result.Configs, nil
 }
 
+// CreateTaskPushConfig implements [a2agoClient.Transport] — creates a push notification config.
 func (t *Transport) CreateTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.CreateTaskPushConfigRequest,
 ) (*a2a.TaskPushConfig, error) {
@@ -239,6 +248,7 @@ func (t *Transport) CreateTaskPushConfig(
 	return t.conv.FromProtoTaskPushConfig(resp)
 }
 
+// DeleteTaskPushConfig implements [a2agoClient.Transport] — deletes a push notification config.
 func (t *Transport) DeleteTaskPushConfig(
 	ctx context.Context, _ a2agoClient.ServiceParams, req *a2a.DeleteTaskPushConfigRequest,
 ) error {
@@ -250,6 +260,7 @@ func (t *Transport) DeleteTaskPushConfig(
 	return err
 }
 
+// GetExtendedAgentCard implements [a2agoClient.Transport] — retrieves the agent's extended card.
 func (t *Transport) GetExtendedAgentCard(
 	ctx context.Context, _ a2agoClient.ServiceParams, _ *a2a.GetExtendedAgentCardRequest,
 ) (*a2a.AgentCard, error) {
@@ -261,6 +272,7 @@ func (t *Transport) GetExtendedAgentCard(
 	return t.conv.FromProtoAgentCard(resp)
 }
 
+// Destroy releases the underlying SLIM channel.
 func (t *Transport) Destroy() error {
 	t.channel.Destroy()
 	return nil

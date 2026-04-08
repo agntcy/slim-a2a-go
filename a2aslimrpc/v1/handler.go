@@ -37,6 +37,7 @@ func (h *Handler) RegisterWith(s *slim_bindings.Server) {
 	ourpb.RegisterA2AServiceServer(s, h)
 }
 
+// SendMessage implements [ourpb.A2AServiceServer] — receives a message and returns a non-streaming response.
 func (h *Handler) SendMessage(
 	ctx context.Context, req *a2agopb.SendMessageRequest,
 ) (*a2agopb.SendMessageResponse, error) {
@@ -51,6 +52,7 @@ func (h *Handler) SendMessage(
 	return h.conv.ToProtoSendMessageResponse(result)
 }
 
+// SendStreamingMessage implements [ourpb.A2AServiceServer] — sends a message and streams events back to the caller.
 func (h *Handler) SendStreamingMessage(
 	ctx context.Context,
 	req *a2agopb.SendMessageRequest,
@@ -75,6 +77,7 @@ func (h *Handler) SendStreamingMessage(
 	return nil
 }
 
+// GetTask implements [ourpb.A2AServiceServer] — retrieves a task by ID.
 func (h *Handler) GetTask(ctx context.Context, req *a2agopb.GetTaskRequest) (*a2agopb.Task, error) {
 	params, err := h.conv.FromProtoGetTaskRequest(req)
 	if err != nil {
@@ -87,6 +90,7 @@ func (h *Handler) GetTask(ctx context.Context, req *a2agopb.GetTaskRequest) (*a2
 	return h.conv.ToProtoTask(task)
 }
 
+// ListTasks implements [ourpb.A2AServiceServer] — lists tasks matching the request filters.
 func (h *Handler) ListTasks(
 	ctx context.Context, req *a2agopb.ListTasksRequest,
 ) (*a2agopb.ListTasksResponse, error) {
@@ -101,6 +105,7 @@ func (h *Handler) ListTasks(
 	return h.conv.ToProtoListTasksResponse(resp)
 }
 
+// CancelTask implements [ourpb.A2AServiceServer] — requests cancellation of a task.
 func (h *Handler) CancelTask(
 	ctx context.Context, req *a2agopb.CancelTaskRequest,
 ) (*a2agopb.Task, error) {
@@ -115,6 +120,7 @@ func (h *Handler) CancelTask(
 	return h.conv.ToProtoTask(task)
 }
 
+// SubscribeToTask implements [ourpb.A2AServiceServer] — (re)subscribes to a task's event stream.
 func (h *Handler) SubscribeToTask(
 	ctx context.Context,
 	req *a2agopb.SubscribeToTaskRequest,
@@ -139,6 +145,7 @@ func (h *Handler) SubscribeToTask(
 	return nil
 }
 
+// CreateTaskPushNotificationConfig implements [ourpb.A2AServiceServer] — creates a push notification config.
 func (h *Handler) CreateTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.TaskPushNotificationConfig,
@@ -154,6 +161,7 @@ func (h *Handler) CreateTaskPushNotificationConfig(
 	return h.conv.ToProtoTaskPushConfig(result)
 }
 
+// GetTaskPushNotificationConfig implements [ourpb.A2AServiceServer] — retrieves a push notification config.
 func (h *Handler) GetTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.GetTaskPushNotificationConfigRequest,
@@ -169,6 +177,7 @@ func (h *Handler) GetTaskPushNotificationConfig(
 	return h.conv.ToProtoTaskPushConfig(result)
 }
 
+// ListTaskPushNotificationConfigs implements [ourpb.A2AServiceServer] — lists push notification configs for a task.
 func (h *Handler) ListTaskPushNotificationConfigs(
 	ctx context.Context,
 	req *a2agopb.ListTaskPushNotificationConfigsRequest,
@@ -185,6 +194,7 @@ func (h *Handler) ListTaskPushNotificationConfigs(
 	return h.conv.ToProtoListTaskPushConfigResponse(resp)
 }
 
+// GetExtendedAgentCard implements [ourpb.A2AServiceServer] — retrieves the agent's extended card.
 func (h *Handler) GetExtendedAgentCard(
 	ctx context.Context, req *a2agopb.GetExtendedAgentCardRequest,
 ) (*a2agopb.AgentCard, error) {
@@ -199,6 +209,7 @@ func (h *Handler) GetExtendedAgentCard(
 	return h.conv.ToProtoAgentCard(card)
 }
 
+// DeleteTaskPushNotificationConfig implements [ourpb.A2AServiceServer] — deletes a push notification config.
 func (h *Handler) DeleteTaskPushNotificationConfig(
 	ctx context.Context,
 	req *a2agopb.DeleteTaskPushNotificationConfigRequest,
