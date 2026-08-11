@@ -17,8 +17,8 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
-	"github.com/agntcy/slim-bindings-go/slimrpc"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
@@ -29,11 +29,11 @@ import (
 type mockProtoServer struct {
 	ourpb.UnimplementedA2AServiceServer
 	sendMessageFn                      func(context.Context, *a2agopb.SendMessageRequest) (*a2agopb.SendMessageResponse, error)
-	sendStreamingMessageFn             func(context.Context, *a2agopb.SendMessageRequest, slimrpc.RequestStream[*a2agopb.StreamResponse]) error
+	sendStreamingMessageFn             func(context.Context, *a2agopb.SendMessageRequest, slim_rpc.ServerStream[*a2agopb.StreamResponse]) error
 	getTaskFn                          func(context.Context, *a2agopb.GetTaskRequest) (*a2agopb.Task, error)
 	listTasksFn                        func(context.Context, *a2agopb.ListTasksRequest) (*a2agopb.ListTasksResponse, error)
 	cancelTaskFn                       func(context.Context, *a2agopb.CancelTaskRequest) (*a2agopb.Task, error)
-	taskSubscriptionFn                 func(context.Context, *a2agopb.TaskSubscriptionRequest, slimrpc.RequestStream[*a2agopb.StreamResponse]) error
+	taskSubscriptionFn                 func(context.Context, *a2agopb.TaskSubscriptionRequest, slim_rpc.ServerStream[*a2agopb.StreamResponse]) error
 	createTaskPushNotificationConfigFn func(context.Context, *a2agopb.CreateTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error)
 	getTaskPushNotificationConfigFn    func(context.Context, *a2agopb.GetTaskPushNotificationConfigRequest) (*a2agopb.TaskPushNotificationConfig, error)
 	listTaskPushNotificationConfigFn   func(context.Context, *a2agopb.ListTaskPushNotificationConfigRequest) (*a2agopb.ListTaskPushNotificationConfigResponse, error)
@@ -50,7 +50,7 @@ func (m *mockProtoServer) SendMessage(ctx context.Context, req *a2agopb.SendMess
 	return m.UnimplementedA2AServiceServer.SendMessage(ctx, req)
 }
 
-func (m *mockProtoServer) SendStreamingMessage(ctx context.Context, req *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+func (m *mockProtoServer) SendStreamingMessage(ctx context.Context, req *a2agopb.SendMessageRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 	if m.sendStreamingMessageFn != nil {
 		return m.sendStreamingMessageFn(ctx, req, stream)
 	}
@@ -78,7 +78,7 @@ func (m *mockProtoServer) CancelTask(ctx context.Context, req *a2agopb.CancelTas
 	return m.UnimplementedA2AServiceServer.CancelTask(ctx, req)
 }
 
-func (m *mockProtoServer) TaskSubscription(ctx context.Context, req *a2agopb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+func (m *mockProtoServer) TaskSubscription(ctx context.Context, req *a2agopb.TaskSubscriptionRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 	if m.taskSubscriptionFn != nil {
 		return m.taskSubscriptionFn(ctx, req, stream)
 	}
@@ -133,11 +133,11 @@ func startTestTransport(t *testing.T, srv ourpb.A2AServiceServer, opts ...Transp
 		t.Fatalf("create server app: %v", err)
 	}
 
-	server := slim_bindings.NewServer(serverApp, serverName)
+	server := slim_rpc.NewServer(serverApp, serverName)
 	ourpb.RegisterA2AServiceServer(server, srv)
 	go func() {
-		if err := server.Serve(); err != nil {
-			t.Logf("server.Serve() exited with error: %v", err)
+		if err := server.ServeBlocking(); err != nil {
+			t.Logf("server.ServeBlocking() exited with error: %v", err)
 		}
 	}()
 
@@ -150,14 +150,14 @@ func startTestTransport(t *testing.T, srv ourpb.A2AServiceServer, opts ...Transp
 		t.Fatalf("create client app: %v", err)
 	}
 
-	channel := slim_bindings.NewChannel(clientApp, serverName)
+	channel := slim_rpc.NewChannel(clientApp, serverName)
 	transport := NewTransport(channel, opts...)
 
 	t.Cleanup(func() {
 		if err := transport.Destroy(); err != nil {
 			t.Logf("transport.Destroy: %v", err)
 		}
-		server.Shutdown()
+		server.ShutdownBlocking()
 	})
 	return transport
 }
@@ -321,7 +321,7 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 	msgID := "stream-msg-1"
 
 	mock := &mockProtoServer{
-		sendStreamingMessageFn: func(_ context.Context, req *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+		sendStreamingMessageFn: func(_ context.Context, req *a2agopb.SendMessageRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 			if req.GetRequest().GetMessageId() == "trigger-error" {
 				return errors.New("mock server stream error")
 			}
@@ -481,7 +481,7 @@ func TestTransport_SendStreamingMessage(t *testing.T) {
 
 	t.Run("response decode error", func(t *testing.T) {
 		transport := startTestTransport(t, &mockProtoServer{
-			sendStreamingMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+			sendStreamingMessageFn: func(_ context.Context, _ *a2agopb.SendMessageRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 				return stream.Send(&a2agopb.StreamResponse{
 					Payload: &a2agopb.StreamResponse_Msg{
 						Msg: &a2agopb.Message{MessageId: "resp", Role: a2agopb.Role_ROLE_AGENT},
@@ -815,7 +815,7 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 	taskID := a2a.TaskID("sub-task-1")
 
 	mock := &mockProtoServer{
-		taskSubscriptionFn: func(_ context.Context, req *a2agopb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+		taskSubscriptionFn: func(_ context.Context, req *a2agopb.TaskSubscriptionRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 			if req.GetName() == "tasks/handler-error" {
 				return errors.New("subscribe error")
 			}
@@ -930,7 +930,7 @@ func TestTransport_SubscribeToTask(t *testing.T) {
 
 	t.Run("response decode error", func(t *testing.T) {
 		transport := startTestTransport(t, &mockProtoServer{
-			taskSubscriptionFn: func(_ context.Context, _ *a2agopb.TaskSubscriptionRequest, stream slimrpc.RequestStream[*a2agopb.StreamResponse]) error {
+			taskSubscriptionFn: func(_ context.Context, _ *a2agopb.TaskSubscriptionRequest, stream slim_rpc.ServerStream[*a2agopb.StreamResponse]) error {
 				return stream.Send(&a2agopb.StreamResponse{
 					Payload: &a2agopb.StreamResponse_Task{
 						Task: &a2agopb.Task{Id: "task-1", Status: &a2agopb.TaskStatus{State: a2agopb.TaskState_TASK_STATE_WORKING}},
@@ -1398,7 +1398,7 @@ func TestTransport_Destroy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create app: %v", err)
 	}
-	channel := slim_bindings.NewChannel(app, slim_bindings.NewName("agntcy", "destroy-test", "srv"))
+	channel := slim_rpc.NewChannel(app, slim_bindings.NewName("agntcy", "destroy-test", "srv"))
 	transport := NewTransport(channel)
 	if err := transport.Destroy(); err != nil {
 		t.Fatalf("Destroy() returned unexpected error: %v", err)

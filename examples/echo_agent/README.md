@@ -10,7 +10,7 @@ This is the Go equivalent of the `echo_agent` example from [slim-a2a-python](htt
 The SLIM transport uses a pre-compiled Rust library. Run the setup tool once to download it:
 
 ```bash
-go run github.com/agntcy/slim-bindings-go/cmd/slim-bindings-setup
+go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
 ```
 
 ### 2. Start a SLIM node

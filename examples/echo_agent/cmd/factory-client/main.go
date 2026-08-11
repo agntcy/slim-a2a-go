@@ -22,7 +22,7 @@ import (
 	a2aclient "github.com/a2aproject/a2a-go/v2/a2aclient"
 	a2aslimrpcv0 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v0"
 	a2aslimrpcv1 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
 )
 
 func main() {

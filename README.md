@@ -29,7 +29,7 @@ same agent (see `--a2a-version both` in the echo agent example).
 **slim-bindings-go setup (one-time)** — downloads the pre-compiled Rust library:
 
 ```bash
-go run github.com/agntcy/slim-bindings-go/cmd/slim-bindings-setup
+go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
 ```
 
 **SLIM node** — download `slimctl` from the
@@ -44,7 +44,8 @@ slimctl slim start --endpoint 127.0.0.1:46357
 ```go
 import (
     a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
-    slim_bindings "github.com/agntcy/slim-bindings-go"
+    slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+    slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
     "github.com/a2aproject/a2a-go/v2/a2asrv"
 )
 
@@ -56,9 +57,9 @@ app, _ := svc.CreateAppWithSecret(name, secret)
 connID, _ := svc.Connect(slim_bindings.NewInsecureClientConfig(slimNodeURL))
 app.Subscribe(name, &connID)
 
-server := slim_bindings.ServerNewWithConnection(app, name, &connID)
+server := slim_rpc.ServerNewWithConnection(app, name, &connID)
 a2aslimrpc.NewHandler(a2asrv.NewHandler(myExecutor)).RegisterWith(server)
-server.Serve()
+server.ServeBlocking()
 ```
 
 ## Client quickstart
@@ -90,7 +91,7 @@ result, _ := client.SendMessage(ctx, req)
 Or construct a `Transport` directly without the factory:
 
 ```go
-channel := slim_bindings.ChannelNewWithConnection(app, remoteName, &connID)
+channel := slim_rpc.ChannelNewWithConnection(app, remoteName, &connID)
 transport := a2aslimrpc.NewTransport(channel)
 defer transport.Destroy()
 result, _ := transport.SendMessage(ctx, nil, req)
