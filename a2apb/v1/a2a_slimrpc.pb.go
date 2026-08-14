@@ -9,8 +9,7 @@ import (
 	"time"
 
 	a2a_a2apb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
-	"github.com/agntcy/slim-bindings-go/slimrpc"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -18,11 +17,11 @@ import (
 // A2AServiceClient is the client API for A2AService service.
 type A2AServiceClient interface {
 	SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error)
-	SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
+	SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
 	GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (*a2a_a2apb.Task, error)
 	ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (*a2a_a2apb.ListTasksResponse, error)
 	CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (*a2a_a2apb.Task, error)
-	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
+	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slim_rpc.ResponseStream[*a2a_a2apb.StreamResponse], error)
 	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error)
@@ -31,11 +30,11 @@ type A2AServiceClient interface {
 }
 
 type A2AServiceClientImpl struct {
-	channel *slim_bindings.Channel
+	channel slim_rpc.ChannelInterface
 }
 
 // NewA2AServiceClient creates a new A2AService client.
-func NewA2AServiceClient(channel *slim_bindings.Channel) A2AServiceClient {
+func NewA2AServiceClient(channel slim_rpc.ChannelInterface) A2AServiceClient {
 	return &A2AServiceClientImpl{
 		channel: channel,
 	}
@@ -57,7 +56,7 @@ func (c *A2AServiceClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.S
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -76,7 +75,7 @@ func (c *A2AServiceClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.S
 	return resp, nil
 }
 
-func (c *A2AServiceClientImpl) SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
+func (c *A2AServiceClientImpl) SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -92,7 +91,7 @@ func (c *A2AServiceClientImpl) SendStreamingMessage(ctx context.Context, req *a2
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -102,7 +101,7 @@ func (c *A2AServiceClientImpl) SendStreamingMessage(ctx context.Context, req *a2
 		return nil, err
 	}
 
-	return slimrpc.NewClientResponseStream[*a2a_a2apb.StreamResponse](stream), nil
+	return slim_rpc.NewClientResponseStream[*a2a_a2apb.StreamResponse](stream), nil
 }
 
 func (c *A2AServiceClientImpl) GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (*a2a_a2apb.Task, error) {
@@ -121,7 +120,7 @@ func (c *A2AServiceClientImpl) GetTask(ctx context.Context, req *a2a_a2apb.GetTa
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -156,7 +155,7 @@ func (c *A2AServiceClientImpl) ListTasks(ctx context.Context, req *a2a_a2apb.Lis
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -191,7 +190,7 @@ func (c *A2AServiceClientImpl) CancelTask(ctx context.Context, req *a2a_a2apb.Ca
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -210,7 +209,7 @@ func (c *A2AServiceClientImpl) CancelTask(ctx context.Context, req *a2a_a2apb.Ca
 	return resp, nil
 }
 
-func (c *A2AServiceClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slimrpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
+func (c *A2AServiceClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slim_rpc.ResponseStream[*a2a_a2apb.StreamResponse], error) {
 	// Serialize request
 	reqBytes, err := proto.Marshal(req)
 	if err != nil {
@@ -226,7 +225,7 @@ func (c *A2AServiceClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2a
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -236,7 +235,7 @@ func (c *A2AServiceClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2a
 		return nil, err
 	}
 
-	return slimrpc.NewClientResponseStream[*a2a_a2apb.StreamResponse](stream), nil
+	return slim_rpc.NewClientResponseStream[*a2a_a2apb.StreamResponse](stream), nil
 }
 
 func (c *A2AServiceClientImpl) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error) {
@@ -255,7 +254,7 @@ func (c *A2AServiceClientImpl) CreateTaskPushNotificationConfig(ctx context.Cont
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -290,7 +289,7 @@ func (c *A2AServiceClientImpl) GetTaskPushNotificationConfig(ctx context.Context
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -325,7 +324,7 @@ func (c *A2AServiceClientImpl) ListTaskPushNotificationConfigs(ctx context.Conte
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -360,7 +359,7 @@ func (c *A2AServiceClientImpl) GetExtendedAgentCard(ctx context.Context, req *a2
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -395,7 +394,7 @@ func (c *A2AServiceClientImpl) DeleteTaskPushNotificationConfig(ctx context.Cont
 
 	// Extract metadata from context
 	var metadata *map[string]string
-	if md, ok := slimrpc.MetadataFromContext(ctx); ok {
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
 		metadata = &md
 	}
 
@@ -419,11 +418,11 @@ func (c *A2AServiceClientImpl) DeleteTaskPushNotificationConfig(ctx context.Cont
 // for forward compatibility
 type A2AServiceServer interface {
 	SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (*a2a_a2apb.SendMessageResponse, error)
-	SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error
+	SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest, stream slim_rpc.ServerStream[*a2a_a2apb.StreamResponse]) error
 	GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (*a2a_a2apb.Task, error)
 	ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (*a2a_a2apb.ListTasksResponse, error)
 	CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (*a2a_a2apb.Task, error)
-	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error
+	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slim_rpc.ServerStream[*a2a_a2apb.StreamResponse]) error
 	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (*a2a_a2apb.TaskPushNotificationConfig, error)
 	ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (*a2a_a2apb.ListTaskPushNotificationConfigsResponse, error)
@@ -439,7 +438,7 @@ func (UnimplementedA2AServiceServer) SendMessage(ctx context.Context, req *a2a_a
 	return nil, fmt.Errorf("method SendMessage not implemented")
 }
 
-func (UnimplementedA2AServiceServer) SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error {
+func (UnimplementedA2AServiceServer) SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest, stream slim_rpc.ServerStream[*a2a_a2apb.StreamResponse]) error {
 	return fmt.Errorf("method SendStreamingMessage not implemented")
 }
 
@@ -455,7 +454,7 @@ func (UnimplementedA2AServiceServer) CancelTask(ctx context.Context, req *a2a_a2
 	return nil, fmt.Errorf("method CancelTask not implemented")
 }
 
-func (UnimplementedA2AServiceServer) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slimrpc.RequestStream[*a2a_a2apb.StreamResponse]) error {
+func (UnimplementedA2AServiceServer) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest, stream slim_rpc.ServerStream[*a2a_a2apb.StreamResponse]) error {
 	return fmt.Errorf("method SubscribeToTask not implemented")
 }
 
@@ -479,8 +478,8 @@ func (UnimplementedA2AServiceServer) DeleteTaskPushNotificationConfig(ctx contex
 	return nil, fmt.Errorf("method DeleteTaskPushNotificationConfig not implemented")
 }
 
-// RegisterA2AServiceServer registers the server with slim_bindings.
-func RegisterA2AServiceServer(server *slim_bindings.Server, impl A2AServiceServer) {
+// RegisterA2AServiceServer registers the server with slim_rpc.
+func RegisterA2AServiceServer(server slim_rpc.ServerInterface, impl A2AServiceServer) {
 	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "SendMessage", &A2AService_SendMessage_Handler{impl: impl})
 	server.RegisterUnaryStream("lf.a2a.v1.A2AService", "SendStreamingMessage", &A2AService_SendStreamingMessage_Handler{impl: impl})
 	server.RegisterUnaryUnary("lf.a2a.v1.A2AService", "GetTask", &A2AService_GetTask_Handler{impl: impl})
@@ -498,29 +497,29 @@ type A2AService_SendMessage_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_SendMessage_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_SendMessage_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.SendMessageRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.SendMessage(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -528,8 +527,8 @@ func (h *A2AService_SendMessage_Handler) Handle(request []byte, rpcContext *slim
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -541,11 +540,11 @@ type A2AService_SendStreamingMessage_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_SendStreamingMessage_Handler) Handle(request []byte, rpcContext *slim_bindings.Context, sink *slim_bindings.ResponseSink) error {
+func (h *A2AService_SendStreamingMessage_Handler) Handle(request []byte, rpcContext *slim_rpc.Context, sink *slim_rpc.ResponseSink) error {
 	req := &a2a_a2apb.SendMessageRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		rpcErr := slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		rpcErr := slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
@@ -553,11 +552,11 @@ func (h *A2AService_SendStreamingMessage_Handler) Handle(request []byte, rpcCont
 		return rpcErr
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
-	stream := slimrpc.NewServerRequestStream[*a2a_a2apb.StreamResponse](sink)
+	stream := slim_rpc.NewServerRequestStream[*a2a_a2apb.StreamResponse](sink)
 	err := h.impl.SendStreamingMessage(ctx, req, stream)
 
 	// Close the stream after handler returns
@@ -568,13 +567,13 @@ func (h *A2AService_SendStreamingMessage_Handler) Handle(request []byte, rpcCont
 
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			sink.SendErrorAsync(rpcErr)
 			return rpcErr
 		}
 		// Convert generic errors to RpcError
-		rpcErr := slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		rpcErr := slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -589,29 +588,29 @@ type A2AService_GetTask_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_GetTask_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_GetTask_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.GetTaskRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.GetTask(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -619,8 +618,8 @@ func (h *A2AService_GetTask_Handler) Handle(request []byte, rpcContext *slim_bin
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -632,29 +631,29 @@ type A2AService_ListTasks_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_ListTasks_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_ListTasks_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.ListTasksRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.ListTasks(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -662,8 +661,8 @@ func (h *A2AService_ListTasks_Handler) Handle(request []byte, rpcContext *slim_b
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -675,29 +674,29 @@ type A2AService_CancelTask_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_CancelTask_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_CancelTask_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.CancelTaskRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.CancelTask(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -705,8 +704,8 @@ func (h *A2AService_CancelTask_Handler) Handle(request []byte, rpcContext *slim_
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -718,11 +717,11 @@ type A2AService_SubscribeToTask_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_SubscribeToTask_Handler) Handle(request []byte, rpcContext *slim_bindings.Context, sink *slim_bindings.ResponseSink) error {
+func (h *A2AService_SubscribeToTask_Handler) Handle(request []byte, rpcContext *slim_rpc.Context, sink *slim_rpc.ResponseSink) error {
 	req := &a2a_a2apb.SubscribeToTaskRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		rpcErr := slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		rpcErr := slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
@@ -730,11 +729,11 @@ func (h *A2AService_SubscribeToTask_Handler) Handle(request []byte, rpcContext *
 		return rpcErr
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
-	stream := slimrpc.NewServerRequestStream[*a2a_a2apb.StreamResponse](sink)
+	stream := slim_rpc.NewServerRequestStream[*a2a_a2apb.StreamResponse](sink)
 	err := h.impl.SubscribeToTask(ctx, req, stream)
 
 	// Close the stream after handler returns
@@ -745,13 +744,13 @@ func (h *A2AService_SubscribeToTask_Handler) Handle(request []byte, rpcContext *
 
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			sink.SendErrorAsync(rpcErr)
 			return rpcErr
 		}
 		// Convert generic errors to RpcError
-		rpcErr := slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		rpcErr := slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -766,29 +765,29 @@ type A2AService_CreateTaskPushNotificationConfig_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_CreateTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_CreateTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.TaskPushNotificationConfig{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.CreateTaskPushNotificationConfig(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -796,8 +795,8 @@ func (h *A2AService_CreateTaskPushNotificationConfig_Handler) Handle(request []b
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -809,29 +808,29 @@ type A2AService_GetTaskPushNotificationConfig_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_GetTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_GetTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.GetTaskPushNotificationConfigRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.GetTaskPushNotificationConfig(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -839,8 +838,8 @@ func (h *A2AService_GetTaskPushNotificationConfig_Handler) Handle(request []byte
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -852,29 +851,29 @@ type A2AService_ListTaskPushNotificationConfigs_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_ListTaskPushNotificationConfigs_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_ListTaskPushNotificationConfigs_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.ListTaskPushNotificationConfigsRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.ListTaskPushNotificationConfigs(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -882,8 +881,8 @@ func (h *A2AService_ListTaskPushNotificationConfigs_Handler) Handle(request []by
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -895,29 +894,29 @@ type A2AService_GetExtendedAgentCard_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_GetExtendedAgentCard_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_GetExtendedAgentCard_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.GetExtendedAgentCardRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.GetExtendedAgentCard(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -925,8 +924,8 @@ func (h *A2AService_GetExtendedAgentCard_Handler) Handle(request []byte, rpcCont
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -938,29 +937,29 @@ type A2AService_DeleteTaskPushNotificationConfig_Handler struct {
 	impl A2AServiceServer
 }
 
-func (h *A2AService_DeleteTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_bindings.Context) ([]byte, error) {
+func (h *A2AService_DeleteTaskPushNotificationConfig_Handler) Handle(request []byte, rpcContext *slim_rpc.Context) ([]byte, error) {
 	req := &a2a_a2apb.DeleteTaskPushNotificationConfigRequest{}
 	if err := proto.Unmarshal(request, req); err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInvalidArgument,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInvalidArgument,
 			err.Error(),
 			nil,
 		)
 	}
 
-	// Convert slim_bindings.Context to context.Context
-	ctx, cancel := slimrpc.ContextFromRpcContext(rpcContext)
+	// Convert slim_rpc.Context to context.Context
+	ctx, cancel := slim_rpc.ContextFromRpcContext(rpcContext)
 	defer cancel()
 
 	resp, err := h.impl.DeleteTaskPushNotificationConfig(ctx, req)
 	if err != nil {
 		// Check if it's already an RpcError
-		if rpcErr, ok := err.(*slim_bindings.RpcError); ok {
+		if rpcErr, ok := err.(*slim_rpc.RpcError); ok {
 			return nil, rpcErr
 		}
 		// Convert generic errors to RpcError
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
@@ -968,11 +967,300 @@ func (h *A2AService_DeleteTaskPushNotificationConfig_Handler) Handle(request []b
 
 	respBytes, err := proto.Marshal(resp)
 	if err != nil {
-		return nil, slim_bindings.NewRpcErrorRpc(
-			slim_bindings.RpcCodeInternal,
+		return nil, slim_rpc.NewRpcErrorRpc(
+			slim_rpc.RpcCodeInternal,
 			err.Error(),
 			nil,
 		)
 	}
 	return respBytes, nil
+}
+
+// A2AServiceGroupClient is the multicast (group) client API for A2AService service.
+// Requires a slim_rpc.ChannelInterface backed by a channel created with ChannelNewGroup* targeting multiple server instances.
+type A2AServiceGroupClient interface {
+	SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.SendMessageResponse], error)
+	SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.StreamResponse], error)
+	GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.Task], error)
+	ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.ListTasksResponse], error)
+	CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.Task], error)
+	SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.StreamResponse], error)
+	CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (slim_rpc.MulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig], error)
+	GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig], error)
+	ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.ListTaskPushNotificationConfigsResponse], error)
+	GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.AgentCard], error)
+	DeleteTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.DeleteTaskPushNotificationConfigRequest) (slim_rpc.MulticastResponseStream[*emptypb.Empty], error)
+}
+
+type A2AServiceGroupClientImpl struct {
+	channel slim_rpc.ChannelInterface
+}
+
+// NewA2AServiceGroupClient creates a new multicast A2AService client.
+func NewA2AServiceGroupClient(channel slim_rpc.ChannelInterface) A2AServiceGroupClient {
+	return &A2AServiceGroupClientImpl{channel: channel}
+}
+
+func (c *A2AServiceGroupClientImpl) SendMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.SendMessageResponse], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "SendMessage", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.SendMessageResponse](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) SendStreamingMessage(ctx context.Context, req *a2a_a2apb.SendMessageRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.StreamResponse], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryStreamAsync("lf.a2a.v1.A2AService", "SendStreamingMessage", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.StreamResponse](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) GetTask(ctx context.Context, req *a2a_a2apb.GetTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.Task], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "GetTask", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.Task](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) ListTasks(ctx context.Context, req *a2a_a2apb.ListTasksRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.ListTasksResponse], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "ListTasks", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.ListTasksResponse](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) CancelTask(ctx context.Context, req *a2a_a2apb.CancelTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.Task], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "CancelTask", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.Task](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) SubscribeToTask(ctx context.Context, req *a2a_a2apb.SubscribeToTaskRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.StreamResponse], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryStreamAsync("lf.a2a.v1.A2AService", "SubscribeToTask", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.StreamResponse](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) CreateTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.TaskPushNotificationConfig) (slim_rpc.MulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "CreateTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) GetTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.GetTaskPushNotificationConfigRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "GetTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.TaskPushNotificationConfig](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) ListTaskPushNotificationConfigs(ctx context.Context, req *a2a_a2apb.ListTaskPushNotificationConfigsRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.ListTaskPushNotificationConfigsResponse], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "ListTaskPushNotificationConfigs", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.ListTaskPushNotificationConfigsResponse](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) GetExtendedAgentCard(ctx context.Context, req *a2a_a2apb.GetExtendedAgentCardRequest) (slim_rpc.MulticastResponseStream[*a2a_a2apb.AgentCard], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "GetExtendedAgentCard", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*a2a_a2apb.AgentCard](reader), nil
+}
+
+func (c *A2AServiceGroupClientImpl) DeleteTaskPushNotificationConfig(ctx context.Context, req *a2a_a2apb.DeleteTaskPushNotificationConfigRequest) (slim_rpc.MulticastResponseStream[*emptypb.Empty], error) {
+	reqBytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeout *time.Duration
+	if deadline, ok := ctx.Deadline(); ok {
+		t := time.Until(deadline)
+		timeout = &t
+	}
+
+	var metadata *map[string]string
+	if md, ok := slim_rpc.MetadataFromContext(ctx); ok {
+		metadata = &md
+	}
+
+	reader, err := c.channel.CallMulticastUnaryAsync("lf.a2a.v1.A2AService", "DeleteTaskPushNotificationConfig", reqBytes, timeout, metadata)
+	if err != nil {
+		return nil, err
+	}
+	return slim_rpc.NewMulticastResponseStream[*emptypb.Empty](reader), nil
 }

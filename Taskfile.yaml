@@ -3,6 +3,11 @@
 
 version: "3"
 
+vars:
+  # Keep in sync with the github.com/agntcy/slim-bindings-go/v2 version in go.mod:
+  # the plugin emits imports of slim-bindings-go/v2/slim_rpc.
+  SLIMRPC_COMPILER_VERSION: 2.0.0
+
 tasks:
   default:
     desc: List available tasks
@@ -23,7 +28,7 @@ tasks:
   setup:
     desc: Run the slim-bindings-go one-time setup (installs native libraries)
     cmds:
-      - go run github.com/agntcy/slim-bindings-go/cmd/slim-bindings-setup
+      - go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
 
   test:
     desc: Run all tests
@@ -42,11 +47,9 @@ tasks:
     silent: true
 
   install-slimrpc-compiler:
-    desc: Install protoc-gen-slimrpc-go via cargo (skipped if already installed)
-    status:
-      - which protoc-gen-slimrpc-go
+    desc: Install protoc-gen-slimrpc-go {{.SLIMRPC_COMPILER_VERSION}} via cargo (no-op if already at that version)
     cmds:
-      - cargo install agntcy-protoc-slimrpc-plugin
+      - cargo install agntcy-protoc-slimrpc-plugin --version {{.SLIMRPC_COMPILER_VERSION}} --bin protoc-gen-slimrpc-go
 
   generate:
     desc: Generate protobuf and slimrpc stubs into a2apb/v0/ and a2apb/v1/ (requires buf and cargo)
@@ -55,3 +58,5 @@ tasks:
     cmds:
       - buf generate
       - buf generate --template buf.gen.v0.yaml
+      # The plugin does not gofmt its output; keep the committed stubs formatted.
+      - gofmt -w a2apb/v0/a2a_slimrpc.pb.go a2apb/v1/a2a_slimrpc.pb.go

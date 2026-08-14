@@ -9,8 +9,7 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
-	"github.com/agntcy/slim-bindings-go/slimrpc"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
@@ -34,7 +33,7 @@ func NewHandler(handler a2asrv.RequestHandler, opts ...HandlerOption) *Handler {
 }
 
 // RegisterWith registers the A2A service with a SLIM server.
-func (h *Handler) RegisterWith(s *slim_bindings.Server) {
+func (h *Handler) RegisterWith(s slim_rpc.ServerInterface) {
 	ourpb.RegisterA2AServiceServer(s, h)
 }
 
@@ -58,7 +57,7 @@ func (h *Handler) SendMessage(
 func (h *Handler) SendStreamingMessage(
 	ctx context.Context,
 	req *a2agopb.SendMessageRequest,
-	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
+	stream slim_rpc.ServerStream[*a2agopb.StreamResponse],
 ) error {
 	params, err := h.conv.FromProtoSendMessageRequest(req)
 	if err != nil {
@@ -126,7 +125,7 @@ func (h *Handler) CancelTask(
 func (h *Handler) TaskSubscription(
 	ctx context.Context,
 	req *a2agopb.TaskSubscriptionRequest,
-	stream slimrpc.RequestStream[*a2agopb.StreamResponse],
+	stream slim_rpc.ServerStream[*a2agopb.StreamResponse],
 ) error {
 	taskID, err := h.conv.ExtractTaskID(req.GetName())
 	if err != nil {

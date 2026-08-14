@@ -19,7 +19,8 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v1/pbconv"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -54,11 +55,11 @@ func startTestServer(t *testing.T, handler a2asrv.RequestHandler, opts ...Handle
 	}
 
 	slimHandler := NewHandler(handler, opts...)
-	server := slim_bindings.NewServer(serverApp, serverName)
+	server := slim_rpc.NewServer(serverApp, serverName)
 	slimHandler.RegisterWith(server)
 	go func() {
-		if err := server.Serve(); err != nil {
-			t.Logf("server.Serve() exited with error: %v", err)
+		if err := server.ServeBlocking(); err != nil {
+			t.Logf("server.ServeBlocking() exited with error: %v", err)
 		}
 	}()
 
@@ -72,11 +73,11 @@ func startTestServer(t *testing.T, handler a2asrv.RequestHandler, opts ...Handle
 		t.Fatalf("create client app: %v", err)
 	}
 
-	channel := slim_bindings.NewChannel(clientApp, serverName)
+	channel := slim_rpc.NewChannel(clientApp, serverName)
 
 	t.Cleanup(func() {
 		channel.Destroy()
-		server.Shutdown()
+		server.ShutdownBlocking()
 	})
 
 	return ourpb.NewA2AServiceClient(channel)

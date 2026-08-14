@@ -10,7 +10,8 @@ import (
 
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	a2agoClient "github.com/a2aproject/a2a-go/v2/a2aclient"
-	slim_bindings "github.com/agntcy/slim-bindings-go"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v1"
 )
@@ -21,7 +22,7 @@ const SLIMProtocol a2a.TransportProtocol = "slimrpc"
 // Transport implements a2aclient.Transport over SLIM RPC.
 type Transport struct {
 	client  ourpb.A2AServiceClient
-	channel *slim_bindings.Channel
+	channel *slim_rpc.Channel
 	conv    converter
 }
 
@@ -29,7 +30,7 @@ type Transport struct {
 var _ a2agoClient.Transport = (*Transport)(nil)
 
 // NewTransport creates a new SLIM transport wrapping the provided channel.
-func NewTransport(channel *slim_bindings.Channel, opts ...TransportOption) *Transport {
+func NewTransport(channel *slim_rpc.Channel, opts ...TransportOption) *Transport {
 	t := &Transport{
 		client:  ourpb.NewA2AServiceClient(channel),
 		channel: channel,
@@ -57,7 +58,7 @@ func WithSLIMRPCTransport(app *slim_bindings.App, connID *uint64) a2agoClient.Fa
 			if err != nil {
 				return nil, fmt.Errorf("invalid SLIM agent name %q: %w", iface.URL, err)
 			}
-			channel := slim_bindings.ChannelNewWithConnection(app, remoteName, connID)
+			channel := slim_rpc.ChannelNewWithConnection(app, remoteName, connID)
 			return NewTransport(channel), nil
 		}),
 	)
