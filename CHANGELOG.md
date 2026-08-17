@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/agntcy/slim-a2a-go/compare/v0.2.0...v0.3.0) (2026-08-17)
+
+
+### Features
+
+* bump slim-bindings version ([#17](https://github.com/agntcy/slim-a2a-go/issues/17)) ([ac58822](https://github.com/agntcy/slim-a2a-go/commit/ac58822588fcb66b44f2e4211a3892fb8d02801e))
+
+
+### Bug Fixes
+
+* release config ([#19](https://github.com/agntcy/slim-a2a-go/issues/19)) ([550a75c](https://github.com/agntcy/slim-a2a-go/commit/550a75c6665888f21b174de01daf534d479c9781))
+
 ## [0.2.0](https://github.com/agntcy/slim-a2a-go/compare/v0.1.1...v0.2.0) (2026-04-08)
 
 
