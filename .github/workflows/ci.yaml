@@ -62,3 +62,47 @@ jobs:
       - uses: golang/govulncheck-action@v1
         with:
           go-version-file: go.mod
+
+  api-compat:
+    name: API Compatibility
+    runs-on: ubuntu-latest
+    # Advisory only. Reports changes to the exported API against the last
+    # release and the version they imply, so a PR author can tell whether the
+    # title needs `feat!:` (see CONTRIBUTING.md). Never blocks a merge.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gorelease infers the base version from the repository's tags.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # gorelease type-checks every package, the cgo bindings included, so the
+      # native library has to be present.
+      - run: go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
+
+      # gorelease exits non-zero when it finds incompatible changes, and refuses
+      # to run on a dirty tree (a fresh checkout is clean). The report goes to
+      # the job summary so it is readable without opening the logs.
+      - name: gorelease
+        run: |
+          {
+            echo '### `gorelease` — exported API vs the last release'
+            echo
+            echo '```'
+            go run golang.org/x/exp/cmd/gorelease@latest 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
