@@ -1,5 +1,7 @@
 # slim-a2a-go
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/agntcy/slim-a2a-go/badge)](https://scorecard.dev/viewer/?uri=github.com/agntcy/slim-a2a-go)
+
 SLIM RPC transport adapter for the [A2A protocol](https://a2a-protocol.org) in Go.
 
 `slim-a2a-go` lets agents built with [a2a-go](https://github.com/a2aproject/a2a-go) communicate
