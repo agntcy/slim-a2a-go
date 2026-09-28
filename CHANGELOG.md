@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/agntcy/slim-a2a-go/compare/v0.3.0...v0.4.0) (2026-09-28)
+
+
+### Features
+
+* openssf scoreboard implementation ([#22](https://github.com/agntcy/slim-a2a-go/issues/22)) ([abb20a4](https://github.com/agntcy/slim-a2a-go/commit/abb20a4223e9dd6a19224b9e5ab0b1359b8403cc))
+
+
+### Bug Fixes
+
+* bump openssf score ([#25](https://github.com/agntcy/slim-a2a-go/issues/25)) ([e0d00c7](https://github.com/agntcy/slim-a2a-go/commit/e0d00c770bf93c5c5e1c2cb541d8539c2e45fe07))
+
 ## [0.3.0](https://github.com/agntcy/slim-a2a-go/compare/v0.2.0...v0.3.0) (2026-08-17)
 
 
