@@ -1,0 +1,63 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+name: "CodeQL"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "42 5 * * 6"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (go)
+    runs-on: ubuntu-latest
+    permissions:
+      # required to upload SARIF results to code scanning
+      security-events: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # slim-bindings-go ships native libraries that must be installed before
+      # the package can be built; CodeQL's autobuild otherwise fails on cgo.
+      - name: Install slim-bindings-go native libraries
+        run: go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          languages: go
+          build-mode: autobuild
+          queries: +security-extended,security-and-quality
+          config: |
+            name: "CodeQL Config"
+            queries:
+              - uses: security-extended
+              - uses: security-and-quality
+            paths-ignore:
+              - "**/*.pb.go"
+              - "**/*_grpc.pb.go"
+              - "**/mock_*.go"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          category: "/language:go"
