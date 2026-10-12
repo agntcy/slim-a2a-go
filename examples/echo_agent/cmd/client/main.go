@@ -9,6 +9,10 @@
 //	go run ./examples/echo_agent/cmd/client --text "hello world"
 //	go run ./examples/echo_agent/cmd/client --a2a-version v0   # v0.3.x only
 //	go run ./examples/echo_agent/cmd/client --a2a-version v1   # v1.0 only (default)
+//
+// The default identity is a shared secret over plain-text gRPC, which is for
+// a local node only. See examples/echo_agent/README.md for JWT and SPIRE
+// identities and for TLS node connections with bearer or JWT auth.
 package main
 
 import (
@@ -21,12 +25,13 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	a2aslimrpcv0 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v0"
 	a2aslimrpcv1 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
+	"github.com/agntcy/slim-a2a-go/examples/echo_agent/internal/slimconfig"
 	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
 	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
 )
 
 func main() {
-	endpoint := flag.String("slim-endpoint", "http://127.0.0.1:46357", "SLIM node endpoint")
+	slimOpts := slimconfig.RegisterFlags(flag.CommandLine)
 	text := flag.String("text", "hello", "Text message to send to the echo agent")
 	version := flag.String("a2a-version", "v1", "A2A protocol version to use: v0 or v1")
 	flag.Parse()
@@ -36,28 +41,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("starting client", "endpoint", *endpoint, "a2a-version", *version)
+	slog.Info("starting client", "endpoint", slimOpts.Endpoint, "identity", slimOpts.Identity, "a2a-version", *version)
 
-	if err := run(*endpoint, *text, *version); err != nil {
+	if err := run(slimOpts, *text, *version); err != nil {
 		slog.Error("client error", "err", err)
 		os.Exit(1)
 	}
 }
 
-func run(endpoint, text, version string) error {
+func run(opts *slimconfig.Options, text, version string) error {
 	// Initialise the SLIM runtime.
 	slim_bindings.InitializeWithDefaults()
 	svc := slim_bindings.GetGlobalService()
 
 	// Create the client's own SLIM identity.
 	localName := slim_bindings.NewName("agntcy", "demo", "client")
-	app, err := svc.CreateAppWithSecret(localName, "my_shared_secret_for_testing_purposes_only")
+	// The identity type (shared secret, JWT or SPIRE) comes from --identity;
+	// every member of a session needs a compatible one.
+	app, err := opts.CreateApp(svc, localName)
 	if err != nil {
 		return fmt.Errorf("create app: %w", err)
 	}
 
-	// Connect to the SLIM node.
-	connID, err := svc.Connect(slim_bindings.NewInsecureClientConfig(endpoint))
+	// Connect to the SLIM node (TLS and node auth come from --tls / --node-auth).
+	connID, err := opts.Connect(svc)
 	if err != nil {
 		return fmt.Errorf("connect: %w", err)
 	}

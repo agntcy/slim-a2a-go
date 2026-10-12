@@ -55,6 +55,8 @@ slim_bindings.InitializeWithDefaults()
 svc := slim_bindings.GetGlobalService()
 
 name := slim_bindings.NewName("org", "project", "my_agent")
+// Shared secret and plain-text gRPC: local testing only. See
+// "Identity and secure node connections" below for JWT, SPIRE and TLS.
 app, _ := svc.CreateAppWithSecret(name, secret)
 connID, _ := svc.Connect(slim_bindings.NewInsecureClientConfig(slimNodeURL))
 app.Subscribe(name, &connID)
@@ -98,6 +100,109 @@ transport := a2aslimrpc.NewTransport(channel)
 defer transport.Destroy()
 result, _ := transport.SendMessage(ctx, nil, req)
 ```
+
+## Identity and secure node connections
+
+`slim-a2a-go` does not create the SLIM app or the node connection: the caller
+passes them in (`slim_rpc.ServerNewWithConnection(app, name, &connID)` on the
+server, `WithSLIMRPCTransport(app, &connID)` on the client). So the app identity
+and the node connection are whatever the caller configures.
+
+The quickstarts use `CreateAppWithSecret` and `NewInsecureClientConfig`, which
+are for a local node only. With a shared secret, anyone who holds the secret
+can claim **any** SLIM name and join any MLS session. Every member of a session
+must use a compatible identity type, so pick one for the whole mesh.
+
+### JWT identity (EdDSA / `did:key`)
+
+Each agent signs its own JWTs with an Ed25519 private key (PKCS#8 PEM) and
+verifies peers against a JWKS file. The JWKS acts as the allowlist: only peers
+whose public key is in it are accepted. For a `did:key` mesh set the subject to
+the agent's `did:key` and give each JWKS entry `kid` = that `did:key`.
+
+```go
+audience := []string{"agntcy-a2a"}
+did := "did:key:z6Mk..." // this agent's did:key
+
+provider := slim_bindings.IdentityProviderConfigJwt{Config: slim_bindings.ClientJwtAuth{
+    Key: slim_bindings.JwtKeyTypeEncoding{Key: slim_bindings.JwtKeyConfig{
+        Algorithm: slim_bindings.JwtAlgorithmEdDsa,
+        Format:    slim_bindings.JwtKeyFormatPem,
+        Key:       slim_bindings.JwtKeyDataFile{Path: "/etc/agent/ed25519.pem"},
+    }},
+    Subject:  &did,
+    Issuer:   &did,
+    Audience: &audience,
+    Duration: time.Hour,
+}}
+verifier := slim_bindings.IdentityVerifierConfigJwt{Config: slim_bindings.JwtAuth{
+    Key: slim_bindings.JwtKeyTypeDecoding{Key: slim_bindings.JwtKeyConfig{
+        Algorithm: slim_bindings.JwtAlgorithmEdDsa,
+        Format:    slim_bindings.JwtKeyFormatJwks, // or JwtKeyFormatJwk / JwtKeyFormatPem
+        Key:       slim_bindings.JwtKeyDataFile{Path: "/etc/agent/trusted-peers.jwks"},
+    }},
+    Audience: &audience,
+    Duration: time.Hour,
+}}
+app, err := svc.CreateApp(name, provider, verifier)
+```
+
+SLIM verifiers reject tokens without an `iss` claim, so always set `Issuer` on
+the provider; a self-issued token (`iss` = `sub` = `did:key`) is fine. Leave
+`Issuer` unset on the verifier to accept peers with different issuers, or set
+it to pin one. A pre-issued token can be used instead of a signing key with
+`IdentityProviderConfigStaticJwt{Config: slim_bindings.StaticJwtAuth{TokenFile: path}}`.
+
+### SPIRE identity
+
+With a SPIRE agent on the host, the app gets its identity from the SPIFFE
+Workload API and verifies peers against the trust bundle:
+
+```go
+spire := slim_bindings.SpireConfig{
+    SocketPath:   nil, // nil uses SPIFFE_ENDPOINT_SOCKET
+    JwtAudiences: []string{"agntcy-a2a"},
+    TrustDomains: []string{},
+}
+app, err := svc.CreateApp(name,
+    slim_bindings.IdentityProviderConfigSpire{Config: spire},
+    slim_bindings.IdentityVerifierConfigSpire{Config: spire})
+```
+
+### TLS and bearer/JWT auth to the node
+
+Start from `NewSecureClientConfig` (TLS on, system CA roots) and add a CA
+bundle, a client certificate for mTLS, or node authentication as needed. A
+public node that requires TLS plus a bearer token looks like this:
+
+```go
+cfg := slim_bindings.NewSecureClientConfig("https://slim.example.com:443")
+cfg.Tls.CaSource = slim_bindings.CaSourceFile{Path: "/etc/agent/ca.pem"} // optional
+// cfg.Tls.Source = slim_bindings.TlsSourceFile{Cert: "client.pem", Key: "client.key"} // mTLS
+
+// Bearer token read from a file and re-read when it changes.
+var auth slim_bindings.ClientAuthenticationConfig = slim_bindings.ClientAuthenticationConfigStaticJwt{
+    Config: slim_bindings.StaticJwtAuth{TokenFile: "/run/agent/node-token", Duration: time.Hour},
+}
+// Or sign a JWT per connection: slim_bindings.ClientAuthenticationConfigJwt{Config: clientJwtAuth}.
+cfg.Auth = &auth
+
+connID, err := svc.Connect(cfg)
+```
+
+The echo agent example exposes all of this as flags (`--identity`, `--jwt-*`,
+`--spire-*`, `--tls*`, `--node-auth`); see
+[`examples/echo_agent`](examples/echo_agent/README.md#identity-and-node-connection).
+
+### Caller identity in the handler
+
+The handler does not yet tell the A2A executor which SLIM identity sent a
+request. In slim-bindings-go v2.1.0 the server-side `slim_rpc.Context` exposes
+only the deadline, the session ID and the request metadata, and the generated
+stubs build the handler's `context.Context` from those. Metadata is set by the
+sender, so do not use it as an identity. Surfacing the verified caller
+(`peer_subject` / `peer_issuer`) needs SLIM 3.3 bindings and will follow the
+slim-bindings-go upgrade.
 
 ## Packages
 
