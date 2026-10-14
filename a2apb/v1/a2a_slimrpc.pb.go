@@ -9,7 +9,7 @@ import (
 	"time"
 
 	a2a_a2apb "github.com/a2aproject/a2a-go/v2/a2apb/v1"
-	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

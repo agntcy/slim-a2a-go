@@ -31,7 +31,7 @@ same agent (see `--a2a-version both` in the echo agent example).
 **slim-bindings-go setup (one-time)** — downloads the pre-compiled Rust library:
 
 ```bash
-go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
+go run github.com/agntcy/slim-bindings-go/v3/cmd/slim-bindings-setup
 ```
 
 **SLIM node** — download `slimctl` from the
@@ -46,8 +46,8 @@ slimctl slim start --endpoint 127.0.0.1:46357
 ```go
 import (
     a2aslimrpc "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
-    slim_bindings "github.com/agntcy/slim-bindings-go/v2"
-    slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+    slim_bindings "github.com/agntcy/slim-bindings-go/v3"
+    slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
     "github.com/a2aproject/a2a-go/v2/a2asrv"
 )
 
@@ -196,13 +196,31 @@ The echo agent example exposes all of this as flags (`--identity`, `--jwt-*`,
 
 ### Caller identity in the handler
 
-The handler does not yet tell the A2A executor which SLIM identity sent a
-request. In slim-bindings-go v2.1.0 the server-side `slim_rpc.Context` exposes
-only the deadline, the session ID and the request metadata, and the generated
-stubs build the handler's `context.Context` from those. Metadata is set by the
-sender, so do not use it as an identity. Surfacing the verified caller
-(`peer_subject` / `peer_issuer`) needs SLIM 3.3 bindings and will follow the
-slim-bindings-go upgrade.
+The handler stores the verified SLIM identity of the caller in the
+`context.Context` it passes to the `a2asrv.RequestHandler`, so an
+`AgentExecutor` can authorize on it:
+
+```go
+func (e *myExecutor) Execute(ctx context.Context, execCtx *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+    caller, ok := a2aslimrpc.CallerFromContext(ctx)
+    if !ok {
+        // SLIM reported no peer identity.
+    }
+    // caller.Subject: the verified `sub` (a did:key, a SPIFFE ID, or the
+    // name bound to a shared secret). caller.Issuer: the verified `iss`, or "".
+    ...
+}
+```
+
+The values come from the identity token SLIM verified for the session
+(`peer_subject` / `peer_issuer` in the SLIMRPC context), never from request
+metadata, which the sender controls. In a group session they identify the MLS
+sender of the request. The v0 and v1 packages share the type and the context
+key, so an executor served over both reads the caller the same way.
+
+SLIM 3.4 adds `slim-peer-subject` and `slim-payload-sig` to every message's
+metadata. The handler removes both from the call metadata
+(`slim_rpc.MetadataFromContext`); read the identity with `CallerFromContext`.
 
 ## Packages
 

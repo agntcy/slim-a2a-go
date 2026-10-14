@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v3"
 )
 
 // Identity modes accepted by --identity.

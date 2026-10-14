@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v3"
 )
 
 func parse(t *testing.T, args ...string) *Options {

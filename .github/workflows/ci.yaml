@@ -95,7 +95,7 @@ jobs:
 
       # gorelease type-checks every package, the cgo bindings included, so the
       # native library has to be present.
-      - run: go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
+      - run: go run github.com/agntcy/slim-bindings-go/v3/cmd/slim-bindings-setup
 
       # gorelease exits non-zero when it finds incompatible changes, and refuses
       # to run on a dirty tree (a fresh checkout is clean). The report goes to

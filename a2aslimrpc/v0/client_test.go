@@ -17,8 +17,8 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
-	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
-	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v3"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
