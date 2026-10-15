@@ -9,10 +9,11 @@ import (
 	a2agopb "github.com/a2aproject/a2a-go/a2apb"
 	a2a "github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	ourpb "github.com/agntcy/slim-a2a-go/a2apb/v0"
+	"github.com/agntcy/slim-a2a-go/internal/caller"
 )
 
 // Handler implements ourpb.A2AServiceServer by delegating to an a2asrv.RequestHandler.
@@ -33,8 +34,28 @@ func NewHandler(handler a2asrv.RequestHandler, opts ...HandlerOption) *Handler {
 }
 
 // RegisterWith registers the A2A service with a SLIM server.
+//
+// Every request is handled with a context that carries the verified identity
+// of the caller, which the A2A executor reads with [CallerFromContext].
 func (h *Handler) RegisterWith(s slim_rpc.ServerInterface) {
-	ourpb.RegisterA2AServiceServer(s, h)
+	ourpb.RegisterA2AServiceServer(caller.Server{
+		ServerInterface: s,
+		Unary: map[string]slim_rpc.UnaryUnaryHandler{
+			"SendMessage":                      caller.Unary(h.SendMessage),
+			"GetTask":                          caller.Unary(h.GetTask),
+			"ListTasks":                        caller.Unary(h.ListTasks),
+			"CancelTask":                       caller.Unary(h.CancelTask),
+			"CreateTaskPushNotificationConfig": caller.Unary(h.CreateTaskPushNotificationConfig),
+			"GetTaskPushNotificationConfig":    caller.Unary(h.GetTaskPushNotificationConfig),
+			"ListTaskPushNotificationConfig":   caller.Unary(h.ListTaskPushNotificationConfig),
+			"GetAgentCard":                     caller.Unary(h.GetAgentCard),
+			"DeleteTaskPushNotificationConfig": caller.Unary(h.DeleteTaskPushNotificationConfig),
+		},
+		Stream: map[string]slim_rpc.UnaryStreamHandler{
+			"SendStreamingMessage": caller.UnaryStream(h.SendStreamingMessage),
+			"TaskSubscription":     caller.UnaryStream(h.TaskSubscription),
+		},
+	}, h)
 }
 
 // SendMessage implements [ourpb.A2AServiceServer] — receives a message and returns a non-streaming response.

@@ -10,7 +10,7 @@ This is the Go equivalent of the `echo_agent` example from [slim-a2a-python](htt
 The SLIM transport uses a pre-compiled Rust library. Run the setup tool once to download it:
 
 ```bash
-go run github.com/agntcy/slim-bindings-go/v2/cmd/slim-bindings-setup
+go run github.com/agntcy/slim-bindings-go/v3/cmd/slim-bindings-setup
 ```
 
 ### 2. Start a SLIM node
@@ -34,6 +34,13 @@ Optional flags:
 
 With `--a2a-version both` (the default) the server registers both the v0 and v1 RPC service names
 simultaneously, so a v0 or v1 client can both connect to the same running agent.
+
+For each request the server logs the verified identity of the client, read with
+`a2aslimrpc.CallerFromContext` (see [`cmd/server/main.go`](cmd/server/main.go)):
+
+```
+INFO request task=... caller_subject=agntcy/demo/client_m03AMpJQ caller_issuer=""
+```
 
 ## Run the direct client
 
@@ -153,6 +160,8 @@ GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go run ./examples/echo_agent/cmd/clie
 Each token is self-issued (`iss` = `sub`). A client whose key is not in the
 server's `trusted.jwks`, or that uses a shared secret, fails the session
 handshake.
+
+The server logs `caller_subject` and `caller_issuer` as the client's `did:key`.
 
 ### SPIRE identity
 

@@ -19,8 +19,8 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2apb/v0/pbconv"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
-	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
-	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v3"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -45,6 +45,16 @@ func TestMain(m *testing.M) {
 // so concurrent or sequential tests never share a routing entry.
 // The server is shut down and the channel destroyed via t.Cleanup.
 func startTestServer(t *testing.T, handler a2asrv.RequestHandler, opts ...HandlerOption) ourpb.A2AServiceClient {
+	t.Helper()
+	client, _ := startTestServerWithClientApp(t, handler, opts...)
+	return client
+}
+
+// startTestServerWithClientApp is startTestServer that also returns the client
+// app, so a test can compare the identity the server sees with the client's.
+func startTestServerWithClientApp(
+	t *testing.T, handler a2asrv.RequestHandler, opts ...HandlerOption,
+) (ourpb.A2AServiceClient, *slim_bindings.App) {
 	t.Helper()
 	svc := slim_bindings.GetGlobalService()
 
@@ -80,7 +90,7 @@ func startTestServer(t *testing.T, handler a2asrv.RequestHandler, opts ...Handle
 		server.ShutdownBlocking()
 	})
 
-	return ourpb.NewA2AServiceClient(channel)
+	return ourpb.NewA2AServiceClient(channel), clientApp
 }
 
 // mockRequestHandler is a mock of a2asrv.RequestHandler.

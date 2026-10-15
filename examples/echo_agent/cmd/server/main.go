@@ -29,8 +29,8 @@ import (
 	a2aslimrpcv0 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v0"
 	a2aslimrpcv1 "github.com/agntcy/slim-a2a-go/a2aslimrpc/v1"
 	"github.com/agntcy/slim-a2a-go/examples/echo_agent/internal/slimconfig"
-	slim_bindings "github.com/agntcy/slim-bindings-go/v2"
-	slim_rpc "github.com/agntcy/slim-bindings-go/v2/slim_rpc"
+	slim_bindings "github.com/agntcy/slim-bindings-go/v3"
+	slim_rpc "github.com/agntcy/slim-bindings-go/v3/slim_rpc"
 )
 
 func main() {
@@ -102,7 +102,14 @@ type echoExecutor struct{}
 
 var _ a2asrv.AgentExecutor = (*echoExecutor)(nil)
 
-func (e *echoExecutor) Execute(_ context.Context, execCtx *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+func (e *echoExecutor) Execute(ctx context.Context, execCtx *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+	// The verified SLIM identity of the client, from the identity token SLIM
+	// checked for the session (never from request metadata). The v0 and v1
+	// handlers share the context key, so this works for both protocol versions.
+	if caller, ok := a2aslimrpcv1.CallerFromContext(ctx); ok {
+		slog.Info("request", "task", execCtx.TaskID, "caller_subject", caller.Subject, "caller_issuer", caller.Issuer)
+	}
+
 	return func(yield func(a2a.Event, error) bool) {
 		// Emit submitted state for new tasks.
 		if execCtx.StoredTask == nil {
