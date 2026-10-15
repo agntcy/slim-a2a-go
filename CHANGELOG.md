@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/agntcy/slim-a2a-go/compare/v0.4.0...v0.5.0) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrade to slim-bindings-go v3 and expose the verified caller ([#33](https://github.com/agntcy/slim-a2a-go/issues/33))
+
+### Features
+
+* upgrade to slim-bindings-go v3 and expose the verified caller ([#33](https://github.com/agntcy/slim-a2a-go/issues/33)) ([b5443e4](https://github.com/agntcy/slim-a2a-go/commit/b5443e46a2b8656282433496f1d8b9d62ba58173)), closes [#32](https://github.com/agntcy/slim-a2a-go/issues/32)
+
 ## [0.4.0](https://github.com/agntcy/slim-a2a-go/compare/v0.3.0...v0.4.0) (2026-10-13)
 
 
