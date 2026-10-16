@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/agntcy/slim-a2a-go/compare/v0.5.0...v0.5.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** upgrade to slim-bindings-go v3.3.3 ([#36](https://github.com/agntcy/slim-a2a-go/issues/36)) ([672a7dd](https://github.com/agntcy/slim-a2a-go/commit/672a7dd7a312493b3d7ca6d5002fb73061877ec5)), closes [#35](https://github.com/agntcy/slim-a2a-go/issues/35)
+
 ## [0.5.0](https://github.com/agntcy/slim-a2a-go/compare/v0.4.0...v0.5.0) (2026-10-15)
 
 
