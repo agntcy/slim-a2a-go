@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/a2aproject/a2a-go v0.3.13
 	github.com/a2aproject/a2a-go/v2 v2.1.0
-	github.com/agntcy/slim-bindings-go/v3 v3.3.5
+	github.com/agntcy/slim-bindings-go/v3 v3.3.6
 	google.golang.org/protobuf v1.36.11
 )
 
