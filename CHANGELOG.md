@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/agntcy/slim-a2a-go/compare/v0.5.1...v0.5.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* refresh the darwin LDFLAGS note for slim-bindings-go v3.3.6 ([#39](https://github.com/agntcy/slim-a2a-go/issues/39)) ([2c16e51](https://github.com/agntcy/slim-a2a-go/commit/2c16e515bc9ba82e4f9d7f0ff231b34596a26cde))
+
 ## [0.5.1](https://github.com/agntcy/slim-a2a-go/compare/v0.5.0...v0.5.1) (2026-10-16)
 
 
