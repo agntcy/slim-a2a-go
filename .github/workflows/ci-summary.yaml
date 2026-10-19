@@ -12,10 +12,9 @@
 #
 # Re-running a failed job does not re-run this workflow, so a gate that has
 # already failed would stay red. The `workflow_run` trigger closes that gap:
-# when one of the listed workflows completes successfully, the `rerun` job
-# re-runs this workflow's latest failed run for the same commit. Keep the list
-# in step with the workflows that run on pull requests and merge groups in this
-# repository (everything except this one, which would loop).
+# when any other workflow completes successfully, the `rerun` job re-runs this
+# workflow's latest failed run for the same commit. This workflow is excluded
+# from the pattern so it cannot trigger itself.
 
 name: CI Summary
 
@@ -24,7 +23,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
   workflow_run:
-    workflows: [CI, CodeQL, Validate PR Title]
+    workflows: ['*', '!CI Summary']
     types: [completed]
 
 permissions:
