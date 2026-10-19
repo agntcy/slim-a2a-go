@@ -9,6 +9,13 @@
 # Polling rather than reacting to check_suite: GitHub does not deliver
 # check_suite events to workflows when the suite was created by GitHub
 # Actions, so an event-driven gate would stay red after the first evaluation.
+#
+# Re-running a failed job does not re-run this workflow, so a gate that has
+# already failed would stay red. The `workflow_run` trigger closes that gap:
+# when one of the listed workflows completes successfully, the `rerun` job
+# re-runs this workflow's latest failed run for the same commit. Keep the list
+# in step with the workflows that run on pull requests and merge groups in this
+# repository (everything except this one, which would loop).
 
 name: CI Summary
 
@@ -16,18 +23,23 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
+  workflow_run:
+    workflows: [CI, CodeQL, Validate PR Title]
+    types: [completed]
 
 permissions:
   contents: read
   checks: read
+  actions: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.sha }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   ci-summary:
     name: CI Summary
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -73,3 +85,29 @@ jobs:
               console.log(`Waiting on: ${pending.map((c) => c.name).join(', ')}`);
               await sleep(30);
             }
+
+  rerun:
+    name: Re-run CI Summary
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run a failed CI Summary for this commit
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const headSha = context.payload.workflow_run.head_sha;
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci-summary.yaml', head_sha: headSha, per_page: 10,
+            });
+            const gates = data.workflow_runs.filter(
+              (r) => r.event === 'pull_request' || r.event === 'merge_group',
+            );
+            const latest = gates[0];
+            if (!latest || latest.status !== 'completed' || latest.conclusion !== 'failure') {
+              console.log('No failed CI Summary run to re-run for ' + headSha);
+              return;
+            }
+            console.log(`Re-running CI Summary run ${latest.id} for ${headSha}`);
+            await github.rest.actions.reRunWorkflow({ owner, repo, run_id: latest.id });
