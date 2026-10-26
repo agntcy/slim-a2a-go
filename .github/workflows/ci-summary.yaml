@@ -9,6 +9,14 @@
 # Polling rather than reacting to check_suite: GitHub does not deliver
 # check_suite events to workflows when the suite was created by GitHub
 # Actions, so an event-driven gate would stay red after the first evaluation.
+#
+# Re-running a job does not re-run this workflow, so a finished gate would
+# keep its old result. The `workflow_run` trigger closes that gap in both
+# directions: when another workflow is (re-)requested, or completes with a
+# result that disagrees with the gate's, the `rerun` job re-runs this
+# workflow's latest finished run for the same commit, which then waits for
+# and re-reads every check. This workflow is excluded from the pattern so it
+# cannot trigger itself.
 
 name: CI Summary
 
@@ -16,18 +24,23 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
+  workflow_run:
+    workflows: ['*', '!CI Summary']
+    types: [requested, completed]
 
 permissions:
   contents: read
   checks: read
+  actions: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.sha }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_run' }}
 
 jobs:
   ci-summary:
     name: CI Summary
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -73,3 +86,47 @@ jobs:
               console.log(`Waiting on: ${pending.map((c) => c.name).join(', ')}`);
               await sleep(30);
             }
+
+  rerun:
+    name: Re-run CI Summary
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run CI Summary when its result is out of date
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const headSha = run.head_sha;
+            const okConclusions = ['success', 'neutral', 'skipped'];
+
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci-summary.yaml', head_sha: headSha, per_page: 10,
+            });
+            const gate = data.workflow_runs.find(
+              (r) => r.event === 'pull_request' || r.event === 'merge_group',
+            );
+            // No gate yet, or it is still running and will read the latest state.
+            if (!gate || gate.status !== 'completed') {
+              console.log(`No finished CI Summary run for ${headSha}`);
+              return;
+            }
+
+            let stale;
+            if (context.payload.action === 'requested') {
+              // A workflow is (re-)running: the finished gate must wait for it.
+              stale = true;
+            } else {
+              const passed = okConclusions.includes(run.conclusion);
+              stale =
+                (!passed && gate.conclusion === 'success') ||
+                (passed && gate.conclusion === 'failure');
+            }
+            if (!stale) {
+              console.log(`CI Summary (${gate.conclusion}) already agrees with ${run.name} (${run.conclusion})`);
+              return;
+            }
+            console.log(`Re-running CI Summary run ${gate.id} for ${headSha}`);
+            await github.rest.actions.reRunWorkflow({ owner, repo, run_id: gate.id });
