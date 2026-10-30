@@ -1,7 +1,11 @@
 github.com/a2aproject/a2a-go v0.3.13 h1:WpIcSHgCySIxD7OQEdV7U7WJc/HL/G2QQj0RJ0YhPi0=
 github.com/a2aproject/a2a-go v0.3.13/go.mod h1:I7Cm+a1oL+UT6zMoP+roaRE5vdfUa1iQGVN8aSOuZ0I=
+github.com/a2aproject/a2a-go v0.3.15 h1:h5YpCiPq3jxQ5rIns7oDjPag3ivP8u817AzdA4F+NiI=
+github.com/a2aproject/a2a-go v0.3.15/go.mod h1:I7Cm+a1oL+UT6zMoP+roaRE5vdfUa1iQGVN8aSOuZ0I=
 github.com/a2aproject/a2a-go/v2 v2.1.0 h1:mtn3UR+B8RnIRYTVNUHmip8FMCK5Pe3Id2aNATOWEPw=
 github.com/a2aproject/a2a-go/v2 v2.1.0/go.mod h1:nm/NLcGWEQsVf7rgcLy74DyswS5BanPS6ubQhGhiQaA=
+github.com/a2aproject/a2a-go/v2 v2.7.0 h1:rwIpzO5O9Mxu/Rm4S2SZfHYzNcvF3FK9aaaTxP35kAo=
+github.com/a2aproject/a2a-go/v2 v2.7.0/go.mod h1:rvFIb0sBJl2qmJRYU2fQxI6hhIQksmGGMEhT/uRwWww=
 github.com/agntcy/slim-bindings-go/v3 v3.3.6 h1:EllzH9n2E2u32nR0NgVjiarRzeVn6PR0/8SIURX3TaM=
 github.com/agntcy/slim-bindings-go/v3 v3.3.6/go.mod h1:qOrzl6NkLQlvsy4RD4t8v6/NskBRilGG1vDdCLbcF50=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
